@@ -16,10 +16,15 @@ loadEnvLocal();
 async function main(): Promise<void> {
   await withIngestionRun("ingest-headlines", "rss", async () => {
     const pool = getPool();
+    // Dedupe on URL AND on feed+title — feeds re-serve identical stories
+    // under varying URLs (tracking params, republishes).
     const { rows: existing } = await pool.query(`
-      select detail->>'url' as url from sentiment_readings
+      select detail->>'url' as url,
+             (detail->>'feed') || '|' || (detail->>'headline') as fh
+        from sentiment_readings
        where source in ('rss','reddit') and reading_at >= now() - interval '21 days'`);
     const seen = new Set<string>(existing.map((r: { url: string }) => r.url));
+    const seenTitle = new Set<string>(existing.map((r: { fh: string }) => r.fh));
 
     let written = 0;
     const perFeed: Record<string, number> = {};
@@ -28,8 +33,10 @@ async function main(): Promise<void> {
         const headlines = await fetchFeed(feed);
         let n = 0;
         for (const h of headlines) {
-          if (!h.url || seen.has(h.url)) continue;
+          const fh = `${h.feedKey}|${h.title}`;
+          if (!h.url || seen.has(h.url) || seenTitle.has(fh)) continue;
           seen.add(h.url);
+          seenTitle.add(fh);
           const themes = tagThemes(`${h.title} ${h.summary}`);
           await pool.query(
             `insert into sentiment_readings
