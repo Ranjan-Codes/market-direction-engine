@@ -6,11 +6,11 @@ import { Panel, HelpNote, fmtNum } from "../../components/ui";
 export const dynamic = "force-dynamic";
 
 const VERDICT_STYLE: Record<string, string> = {
-  "overbought-risk": "border-red-800 text-red-300",
-  "oversold-setup": "border-green-800 text-green-300",
-  constructive: "border-emerald-900 text-emerald-300",
-  weak: "border-orange-900 text-orange-300",
-  mixed: "border-zinc-700 text-zinc-300",
+  "overbought-risk": "border-red-300 text-red-800",
+  "oversold-setup": "border-green-300 text-green-800",
+  constructive: "border-emerald-300 text-emerald-700",
+  weak: "border-orange-300 text-orange-700",
+  mixed: "border-zinc-400 text-zinc-700",
 };
 
 export default async function WatchlistPage() {
@@ -28,7 +28,7 @@ export default async function WatchlistPage() {
         </span>
       </h1>
 
-      <div className="border border-zinc-800 rounded bg-zinc-950">
+      <div className="border border-zinc-300 rounded bg-white">
         <HelpNote>
           Each watched name gets a plain-English verdict from its <b>leading</b> indicators — the same logic
           as the index gauge, applied per stock. <b>Overbought — profit-booking risk</b> (red): stretch
@@ -43,7 +43,7 @@ export default async function WatchlistPage() {
       </div>
 
       {entries.length === 0 && (
-        <p className="text-sm text-zinc-400 border border-zinc-800 rounded p-6 text-center">
+        <p className="text-sm text-zinc-600 border border-zinc-300 rounded p-6 text-center">
           Empty. Star names in the <Link href="/screener" className="underline">screener</Link> to track how
           the leading indicators read them.
         </p>
@@ -60,7 +60,7 @@ export default async function WatchlistPage() {
               <div className={`border rounded px-2 py-1.5 text-xs font-semibold ${VERDICT_STYLE[e.suggestion.verdict]}`}>
                 {e.suggestion.headline}
               </div>
-              <div className="flex items-center gap-2 mt-2 text-xs text-zinc-400">
+              <div className="flex items-center gap-2 mt-2 text-xs text-zinc-600">
                 <WatchStar symbol={e.symbol} inList={true} />
                 <span>{e.index_symbol}</span>
                 <span>{e.sector}</span>
@@ -68,7 +68,7 @@ export default async function WatchlistPage() {
             </div>
             <div className="flex-1 min-w-64">
               {e.suggestion.evidence.length > 0 ? (
-                <ul className="text-xs text-zinc-300 space-y-0.5">
+                <ul className="text-xs text-zinc-700 space-y-0.5">
                   {e.suggestion.evidence.map((ev, i) => <li key={i}>• {ev}</li>)}
                 </ul>
               ) : (
@@ -79,7 +79,7 @@ export default async function WatchlistPage() {
               <tbody>
                 <tr>
                   <td className="text-zinc-500 pr-3">Signal</td>
-                  <td className={e.direction === "bullish" ? "text-green-400" : e.direction === "bearish" ? "text-red-400" : ""}>
+                  <td className={e.direction === "bullish" ? "text-green-700" : e.direction === "bearish" ? "text-red-700" : ""}>
                     {e.direction ?? "–"} {e.conviction != null ? `(${Math.round(e.conviction)})` : ""}
                     {e.gated ? " · gated" : ""}{e.event_blackout ? " · blackout" : ""}
                   </td>

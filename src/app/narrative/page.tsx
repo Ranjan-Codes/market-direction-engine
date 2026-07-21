@@ -17,7 +17,7 @@ export default async function NarrativePage() {
         </span>
       </h1>
 
-      <div className="border border-zinc-800 rounded bg-zinc-950">
+      <div className="border border-zinc-300 rounded bg-white">
         <HelpNote>
           Headlines from major outlets and central banks are scored by FinBERT (a finance-tuned language
           model) from −1 (bearish tone) to +1 (bullish). <b>Market tone</b>: the daily average per market —
@@ -39,7 +39,7 @@ export default async function NarrativePage() {
           return (
             <Panel key={mkt} title={`${mkt} market tone (daily avg FinBERT score)`} asOf={latest?.date}>
               <div className="flex items-center gap-4">
-                <span className={`text-2xl font-bold ${latest && latest.score > 0.05 ? "text-green-400" : latest && latest.score < -0.05 ? "text-red-400" : "text-zinc-300"}`}>
+                <span className={`text-2xl font-bold ${latest && latest.score > 0.05 ? "text-green-700" : latest && latest.score < -0.05 ? "text-red-700" : "text-zinc-700"}`}>
                   {latest ? fmtNum(latest.score, 3) : "–"}
                 </span>
                 <Sparkline values={series.map((t: { score: number }) => t.score)} baseline={0} width={220} height={40} />
@@ -56,9 +56,9 @@ export default async function NarrativePage() {
             <thead className="text-zinc-500 text-left"><tr><th className="py-1">Theme</th><th>Tone</th><th>Items</th></tr></thead>
             <tbody>
               {themes.map((t: Record<string, any>) => (
-                <tr key={t["scope_key"]} className="border-t border-zinc-900">
+                <tr key={t["scope_key"]} className="border-t border-zinc-200">
                   <td className="py-1">{t["scope_key"]}</td>
-                  <td className={t["tone"] > 0.1 ? "text-green-400" : t["tone"] < -0.1 ? "text-red-400" : "text-zinc-300"}>
+                  <td className={t["tone"] > 0.1 ? "text-green-700" : t["tone"] < -0.1 ? "text-red-700" : "text-zinc-700"}>
                     {fmtNum(t["tone"], 3)}
                   </td>
                   <td className="text-zinc-500">{t["items"]}</td>
@@ -73,9 +73,9 @@ export default async function NarrativePage() {
             <thead className="text-zinc-500 text-left"><tr><th className="py-1">Symbol</th><th>Bull−Bear</th><th>Sample</th></tr></thead>
             <tbody>
               {froth.map((f: Record<string, any>) => (
-                <tr key={f["scope_key"]} className="border-t border-zinc-900">
+                <tr key={f["scope_key"]} className="border-t border-zinc-200">
                   <td className="py-1 font-semibold">{f["scope_key"]}</td>
-                  <td className={f["bull_bear"] > 0.6 ? "text-amber-400 font-semibold" : f["bull_bear"] < -0.3 ? "text-red-400" : "text-zinc-300"}>
+                  <td className={f["bull_bear"] > 0.6 ? "text-amber-600 font-semibold" : f["bull_bear"] < -0.3 ? "text-red-700" : "text-zinc-700"}>
                     {fmtNum(f["bull_bear"], 2)}
                     {f["bull_bear"] > 0.8 && " ⚠ one-sided"}
                   </td>
@@ -84,7 +84,7 @@ export default async function NarrativePage() {
               ))}
             </tbody>
           </table>
-          <p className="text-[10px] text-zinc-600 mt-2">
+          <p className="text-[10px] text-zinc-400 mt-2">
             Reddit froth gauge pending API registration approval.
           </p>
         </Panel>
@@ -97,14 +97,14 @@ export default async function NarrativePage() {
           </thead>
           <tbody>
             {headlines.map((h: Record<string, any>, i: number) => (
-              <tr key={i} className="border-t border-zinc-900">
-                <td className={`py-1 font-semibold ${h["score"] > 0.3 ? "text-green-400" : h["score"] < -0.3 ? "text-red-400" : "text-zinc-400"}`}>
+              <tr key={i} className="border-t border-zinc-200">
+                <td className={`py-1 font-semibold ${h["score"] > 0.3 ? "text-green-700" : h["score"] < -0.3 ? "text-red-700" : "text-zinc-600"}`}>
                   {fmtNum(h["score"], 2)}
                 </td>
                 <td className="text-zinc-500">{h["market"]}</td>
                 <td>{h["headline"]}</td>
                 <td className="text-zinc-500">{h["feed"]}</td>
-                <td className="text-zinc-600">{(h["reading_at"] as string)?.slice(5, 16)}</td>
+                <td className="text-zinc-400">{(h["reading_at"] as string)?.slice(5, 16)}</td>
               </tr>
             ))}
           </tbody>

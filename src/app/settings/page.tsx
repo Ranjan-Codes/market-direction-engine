@@ -21,13 +21,13 @@ export default function SettingsPage() {
       </h1>
       {blocks.map(([title, value]) => (
         <Panel key={title as string} title={title as string}>
-          <pre className="text-[11px] text-zinc-300 overflow-x-auto whitespace-pre-wrap">
+          <pre className="text-[11px] text-zinc-700 overflow-x-auto whitespace-pre-wrap">
             {JSON.stringify(value, null, 2)}
           </pre>
         </Panel>
       ))}
       <Panel title="Secrets & data sources">
-        <p className="text-xs text-zinc-400">
+        <p className="text-xs text-zinc-600">
           API keys live in .env.local / GitHub Actions secrets / Netlify env vars only. Free sources:
           Yahoo (OHLCV, caps, earnings), Wikipedia + Nasdaq API (membership), FRED (macro, vintaged),
           ForexFactory (calendar), CFTC (COT), RSS + GDELT + StockTwits (narrative). Every datapoint row

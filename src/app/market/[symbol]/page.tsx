@@ -28,7 +28,7 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ s
         <Link href="/" className="underline">← Today</Link>
       </div>
 
-      <div className={`border ${style.border} rounded-xl bg-zinc-950 p-5`}>
+      <div className={`border ${style.border} rounded-xl bg-white p-5`}>
         <div className="flex items-center gap-4 flex-wrap">
           <GaugeDial direction={g.direction} intensity={g.intensity} />
           <div className="flex-1 min-w-64">
@@ -38,18 +38,18 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ s
               <span className="text-xs text-zinc-500">week ending {r.as_of_date}</span>
             </div>
             <p className={`text-lg font-semibold mt-1 ${style.text}`}>{v.headline}</p>
-            <p className="text-sm text-zinc-400">{v.sub}</p>
+            <p className="text-sm text-zinc-600">{v.sub}</p>
           </div>
           <Sparkline values={r.history.map((h) => h.composite)} baseline={50} width={180} height={44} />
         </div>
         {g.evidence.length > 0 && (
-          <div className="mt-4 border-t border-zinc-900 pt-3">
+          <div className="mt-4 border-t border-zinc-200 pt-3">
             <p className="text-xs uppercase tracking-wide text-zinc-500 mb-1.5">All warning evidence</p>
             <ul className="space-y-1">
               {g.evidence.map((e, i) => (
-                <li key={i} className="text-sm text-zinc-300">
+                <li key={i} className="text-sm text-zinc-700">
                   · {plainEvidence(e.item, e.detail)}{" "}
-                  <span className="text-zinc-600 text-xs">({e.detail}, weight {e.weight})</span>
+                  <span className="text-zinc-400 text-xs">({e.detail}, weight {e.weight})</span>
                 </li>
               ))}
             </ul>
@@ -75,7 +75,7 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ s
           <tbody>
             <tr>
               {[r.trend_score, r.breadth_score, r.intermarket_score, r.positioning_score, r.narrative_score].map((s, i) => (
-                <td key={i} className={`py-2 text-base ${s == null ? "text-zinc-600" : s >= 60 ? "text-green-400" : s <= 40 ? "text-red-400" : "text-zinc-200"}`}>
+                <td key={i} className={`py-2 text-base ${s == null ? "text-zinc-400" : s >= 60 ? "text-green-700" : s <= 40 ? "text-red-700" : "text-zinc-800"}`}>
                   {s ?? "n/a"}
                 </td>
               ))}
@@ -105,7 +105,7 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ s
             ).map(([k, val]) => (
               <div key={k}>
                 <p className="text-[11px] text-zinc-500">{k}</p>
-                <p className={`font-semibold ${val.includes("⚠") ? "text-red-400" : "text-zinc-200"}`}>{val}</p>
+                <p className={`font-semibold ${val.includes("⚠") ? "text-red-700" : "text-zinc-800"}`}>{val}</p>
               </div>
             ))}
           </div>
@@ -123,10 +123,10 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ s
               {intermarket.map((m: Record<string, any>) => {
                 const chg = m.close_13w_ago != null ? m.close / m.close_13w_ago - 1 : null;
                 return (
-                  <tr key={m.symbol} className="border-t border-zinc-900">
+                  <tr key={m.symbol} className="border-t border-zinc-200">
                     <td className="py-1 font-semibold">{m.symbol}</td>
                     <td className="text-zinc-500">{m.role}</td>
-                    <td className={chg != null && chg > 0 ? "text-green-400" : "text-red-400"}>{fmtPct(chg)}</td>
+                    <td className={chg != null && chg > 0 ? "text-green-700" : "text-red-700"}>{fmtPct(chg)}</td>
                   </tr>
                 );
               })}
@@ -141,11 +141,11 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ s
           <table className="w-full text-xs">
             <tbody>
               {macro.map((m: Record<string, any>) => (
-                <tr key={m.series_code} className="border-t border-zinc-900">
+                <tr key={m.series_code} className="border-t border-zinc-200">
                   <td className="py-1">{m.name}</td>
                   <td><Tag kind={m.lead_lag ?? "coincident"} /></td>
                   <td className="font-semibold">{fmtNum(m.value, 2)}</td>
-                  <td className="text-zinc-600">{String(m.obs_date).slice(0, 10)}</td>
+                  <td className="text-zinc-400">{String(m.obs_date).slice(0, 10)}</td>
                 </tr>
               ))}
             </tbody>
@@ -157,11 +157,11 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ s
         title="Scheduled catalysts (next 30 days)"
         help="The releases and heavyweight earnings that could trigger the move. * = high importance."
       >
-        <div className="text-sm text-zinc-300 leading-relaxed">
+        <div className="text-sm text-zinc-700 leading-relaxed">
           {r.breakdown.catalysts.length === 0
             ? "None on the calendar yet."
             : r.breakdown.catalysts.map((c, i) => (
-                <span key={i} className={c.importance === "high" ? "text-amber-300" : ""}>
+                <span key={i} className={c.importance === "high" ? "text-amber-700" : ""}>
                   {c.event_name.replace("Earnings: ", "")} {c.release_at.slice(5, 10).replace("-", "/")}
                   {c.importance === "high" ? "*" : ""}
                   {i < r.breakdown.catalysts.length - 1 ? "  ·  " : ""}

@@ -20,7 +20,7 @@ export function WatchStar({ symbol, inList }: { symbol: string; inList: boolean 
           router.refresh();
         })
       }
-      className={`text-sm leading-none ${optimistic ? "text-amber-400" : "text-zinc-600 hover:text-zinc-300"}`}
+      className={`text-sm leading-none ${optimistic ? "text-amber-600" : "text-zinc-400 hover:text-zinc-700"}`}
     >
       {optimistic ? "★" : "☆"}
     </button>

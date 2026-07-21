@@ -8,10 +8,10 @@ import { WatchStar } from "../../components/watch-star";
 const FACTORS = ["trendMa", "momentum", "divergence", "relativeStrength", "volume", "bollinger", "range"] as const;
 
 function cellColor(v: number | null | undefined): string {
-  if (v == null) return "text-zinc-600";
-  if (v > 0.3) return "text-green-400";
-  if (v < -0.3) return "text-red-400";
-  return "text-zinc-400";
+  if (v == null) return "text-zinc-400";
+  if (v > 0.3) return "text-green-700";
+  if (v < -0.3) return "text-red-700";
+  return "text-zinc-600";
 }
 
 export function ScreenerTable({
@@ -43,7 +43,7 @@ export function ScreenerTable({
     [signals, index, direction, status, minConviction],
   );
 
-  const sel = "bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs";
+  const sel = "bg-zinc-50 border border-zinc-400 rounded px-2 py-1 text-xs";
   return (
     <div>
       <div className="flex gap-2 mb-2 items-center text-xs">
@@ -61,7 +61,7 @@ export function ScreenerTable({
           <option value="gated">Gated</option>
           <option value="blackout">Event blackout</option>
         </select>
-        <label className="text-zinc-400">
+        <label className="text-zinc-600">
           Min conviction{" "}
           <input
             type="number" min={0} max={100} value={minConviction}
@@ -69,7 +69,7 @@ export function ScreenerTable({
             className={`${sel} w-16`}
           />
         </label>
-        <label className="text-zinc-400 flex items-center gap-1 cursor-pointer">
+        <label className="text-zinc-600 flex items-center gap-1 cursor-pointer">
           <input
             type="checkbox"
             checked={showFactors}
@@ -80,9 +80,9 @@ export function ScreenerTable({
         <span className="text-zinc-500 ml-auto">{filtered.length} rows</span>
       </div>
 
-      <div className="overflow-x-auto border border-zinc-800 rounded">
+      <div className="overflow-x-auto border border-zinc-300 rounded">
         <table className="w-full text-xs whitespace-nowrap">
-          <thead className="text-zinc-500 text-left bg-zinc-900 sticky top-0">
+          <thead className="text-zinc-500 text-left bg-zinc-50 sticky top-0">
             <tr>
               <th className="px-1 py-1.5 w-6"></th>
               <th className="px-2 py-1.5">Symbol</th>
@@ -96,7 +96,7 @@ export function ScreenerTable({
           </thead>
           <tbody>
             {filtered.slice(0, 400).map((s) => (
-              <tr key={s.symbol} className="border-t border-zinc-900 hover:bg-zinc-900">
+              <tr key={s.symbol} className="border-t border-zinc-200 hover:bg-zinc-50">
                 <td className="px-1 py-1">
                   <WatchStar symbol={s.symbol} inList={watched.has(s.symbol)} />
                 </td>
@@ -105,13 +105,13 @@ export function ScreenerTable({
                     {s.symbol}
                   </Link>
                 </td>
-                <td className="text-zinc-400">{s.index_symbol}</td>
+                <td className="text-zinc-600">{s.index_symbol}</td>
                 <td className="text-zinc-500 max-w-[140px] truncate">{s.sector}</td>
                 <td
                   className={
-                    s.direction === "bullish" ? "text-green-400 font-semibold"
-                    : s.direction === "bearish" ? "text-red-400 font-semibold"
-                    : "text-zinc-400"
+                    s.direction === "bullish" ? "text-green-700 font-semibold"
+                    : s.direction === "bearish" ? "text-red-700 font-semibold"
+                    : "text-zinc-600"
                   }
                 >
                   {s.direction}
@@ -123,14 +123,14 @@ export function ScreenerTable({
                   </td>
                 ))}
                 <td>
-                  {s.gated && <span className="text-amber-400" title={s.gate_reason ?? ""}>GATED</span>}
+                  {s.gated && <span className="text-amber-600" title={s.gate_reason ?? ""}>GATED</span>}
                   {s.event_blackout && (
-                    <span className="text-sky-400 ml-1" title={s.upcoming_events.map((e) => e.event_name).join(", ")}>
+                    <span className="text-sky-600 ml-1" title={s.upcoming_events.map((e) => e.event_name).join(", ")}>
                       BLACKOUT
                     </span>
                   )}
                   {!s.gated && !s.event_blackout && s.direction !== "neutral" && (
-                    <span className="text-green-500">✓</span>
+                    <span className="text-green-600">✓</span>
                   )}
                 </td>
               </tr>
@@ -138,7 +138,7 @@ export function ScreenerTable({
           </tbody>
         </table>
       </div>
-      <p className="text-[10px] text-zinc-600 mt-1">
+      <p className="text-[10px] text-zinc-400 mt-1">
         Gated = regime blocks fresh entries (shown, not hidden). Blackout = high-importance release or own
         earnings within 5 days. Factor cells are the weighted model inputs in [-1, +1].
       </p>

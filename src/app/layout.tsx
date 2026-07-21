@@ -23,21 +23,21 @@ const NAV = [
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100 font-sans">
-        <nav className="flex items-center gap-1 px-4 py-2 border-b border-zinc-800 bg-zinc-900 sticky top-0 z-10">
-          <span className="font-bold text-sm mr-4 text-zinc-100">Market Direction Engine</span>
+      <body className="min-h-full flex flex-col bg-zinc-100 text-zinc-900 font-sans">
+        <nav className="flex items-center gap-1 px-4 py-2 border-b border-zinc-300 bg-white sticky top-0 z-10 shadow-sm">
+          <span className="font-bold text-sm mr-4 text-zinc-900">Market Direction Engine</span>
           {NAV.map(([href, label]) => (
             <Link
               key={href}
               href={href}
-              className="px-2.5 py-1 rounded text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white"
+              className="px-2.5 py-1 rounded text-sm text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
             >
               {label}
             </Link>
           ))}
         </nav>
         <main className="flex-1 p-4 max-w-[1500px] w-full mx-auto">{children}</main>
-        <footer className="px-4 py-2 border-t border-zinc-800 text-[11px] text-zinc-500 bg-zinc-900">
+        <footer className="px-4 py-2 border-t border-zinc-300 text-[11px] text-zinc-500 bg-white">
           Analytical decision-support only — not investment advice, no order execution. All outputs are
           probabilistic and may be wrong; verify independently before acting. Data from free public
           sources; may be delayed or incomplete.

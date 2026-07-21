@@ -14,7 +14,7 @@ export default function GuidePage() {
       </h1>
 
       <Panel title="The one-sentence version">
-        <p className="text-sm text-zinc-300">
+        <p className="text-sm text-zinc-700">
           This app watches for markets that are <b>stretched</b> — overbought or oversold — and warns, with
           evidence and a catalyst schedule, when a reversal is likely within the next 2–6 weeks; everything
           else exists to support, corroborate, or act on that warning.
@@ -22,7 +22,7 @@ export default function GuidePage() {
       </Panel>
 
       <Panel title="The four layers and how they fit">
-        <ol className="text-xs text-zinc-300 space-y-2 list-decimal pl-4">
+        <ol className="text-xs text-zinc-700 space-y-2 list-decimal pl-4">
           <li>
             <b>Layer 1 — Market regime (the gate).</b> Per index, five families of evidence (trend, breadth,
             intermarket, positioning, narrative) blend into a 0–100 composite: ≥60 risk-on, ≤40 risk-off.
@@ -51,13 +51,13 @@ export default function GuidePage() {
       </Panel>
 
       <Panel title="Leading vs coincident vs lagging — why the tags matter">
-        <p className="text-xs text-zinc-300">
-          Every input is tagged. <b className="text-amber-300">Leading</b> inputs (breadth divergences, RSI
+        <p className="text-xs text-zinc-700">
+          Every input is tagged. <b className="text-amber-700">Leading</b> inputs (breadth divergences, RSI
           divergences, credit spreads, yield curve, positioning extremes, narrative extremes) tend to turn{" "}
           <i>before</i> price — they are why this app can warn early, and also why its warnings are
           probabilistic: leading indicators are early, sometimes too early.{" "}
-          <b className="text-sky-300">Coincident</b> inputs (price vs moving averages, MACD) confirm what is
-          already happening — they keep the leading inputs honest. <b className="text-zinc-400">Lagging</b>{" "}
+          <b className="text-sky-700">Coincident</b> inputs (price vs moving averages, MACD) confirm what is
+          already happening — they keep the leading inputs honest. <b className="text-zinc-600">Lagging</b>{" "}
           inputs (CPI, unemployment) matter through the policy response they provoke. A disciplined read:
           act on leading evidence only when it clusters (several independent warnings at once — which is
           exactly what the gauge intensity measures), and use coincident evidence to time it.
@@ -65,7 +65,7 @@ export default function GuidePage() {
       </Panel>
 
       <Panel title="How to use it — a weekly routine">
-        <ol className="text-xs text-zinc-300 space-y-1.5 list-decimal pl-4">
+        <ol className="text-xs text-zinc-700 space-y-1.5 list-decimal pl-4">
           <li>
             <b>Start at Regime.</b> Note each index&apos;s regime badge and gauge. Gauge quiet → step 3.
           </li>
@@ -93,7 +93,7 @@ export default function GuidePage() {
       </Panel>
 
       <Panel title="Glossary — the indicators in one line each">
-        <table className="w-full text-xs text-zinc-300">
+        <table className="w-full text-xs text-zinc-700">
           <tbody>
             {(
               [
@@ -114,9 +114,9 @@ export default function GuidePage() {
                 ["Gauge intensity", "0–100 share of weighted reversal evidence present; fires at ≥25"],
               ] as Array<[string, string]>
             ).map(([term, def]) => (
-              <tr key={term} className="border-t border-zinc-900 align-top">
+              <tr key={term} className="border-t border-zinc-200 align-top">
                 <td className="py-1 pr-3 font-semibold whitespace-nowrap">{term}</td>
-                <td className="py-1 text-zinc-400">{def}</td>
+                <td className="py-1 text-zinc-600">{def}</td>
               </tr>
             ))}
           </tbody>
@@ -124,7 +124,7 @@ export default function GuidePage() {
       </Panel>
 
       <Panel title="What this app is not">
-        <ul className="text-xs text-zinc-400 space-y-1 list-disc pl-4">
+        <ul className="text-xs text-zinc-600 space-y-1 list-disc pl-4">
           <li>Not investment advice and not a trading system — it is decision support; you decide.</li>
           <li>Not a day-trading tool — everything is built on weekly bars for a 2–6 week horizon.</li>
           <li>

@@ -14,7 +14,7 @@ const GROUPS: Array<[string, string]> = [
 
 export default async function BacktestPage() {
   const report = await getBacktestReport();
-  if (!report) return <p className="text-sm text-zinc-400">No successful backtest run yet.</p>;
+  if (!report) return <p className="text-sm text-zinc-600">No successful backtest run yet.</p>;
   const { run, results } = report;
 
   return (
@@ -26,7 +26,7 @@ export default async function BacktestPage() {
         </span>
       </h1>
 
-      <div className="border border-zinc-800 rounded bg-zinc-950">
+      <div className="border border-zinc-300 rounded bg-white">
         <HelpNote>
           The honesty page: the live signal code replayed over history with strict point-in-time data.
           Column meanings — <b>n</b>: signal-weeks in the segment. <b>Hit</b>: % that moved the signalled
@@ -57,18 +57,18 @@ export default async function BacktestPage() {
               </thead>
               <tbody>
                 {rows.map((r: Record<string, any>) => (
-                  <tr key={r["segment_key"]} className="border-t border-zinc-900">
+                  <tr key={r["segment_key"]} className="border-t border-zinc-200">
                     <td className="py-1">{r["segment_key"]}</td>
-                    <td className="text-zinc-400">{r["n_signals"]}</td>
+                    <td className="text-zinc-600">{r["n_signals"]}</td>
                     <td>{r["hit_rate"] != null ? `${(r["hit_rate"] * 100).toFixed(0)}%` : "–"}</td>
                     {(["avg_fwd_return_2w", "avg_fwd_return_4w", "avg_fwd_return_6w"] as const).map((k) => (
-                      <td key={k} className={r[k] > 0 ? "text-green-400" : r[k] < 0 ? "text-red-400" : ""}>
+                      <td key={k} className={r[k] > 0 ? "text-green-700" : r[k] < 0 ? "text-red-700" : ""}>
                         {fmtPct(r[k], 2)}
                       </td>
                     ))}
                     <td>{fmtPct(r["expectancy"], 2)}</td>
                     <td>{fmtNum(r["profit_factor"], 2)}</td>
-                    <td className="text-zinc-400">{fmtPct(r["max_drawdown"], 1)}</td>
+                    <td className="text-zinc-600">{fmtPct(r["max_drawdown"], 1)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -78,7 +78,7 @@ export default async function BacktestPage() {
       })}
 
       <Panel title="Caveats recorded with this run">
-        <ul className="text-xs text-zinc-400 space-y-1 list-disc pl-4">
+        <ul className="text-xs text-zinc-600 space-y-1 list-disc pl-4">
           {((run.config?.caveats as string[]) ?? []).map((c, i) => <li key={i}>{c}</li>)}
           <li>
             Gauge &quot;hit&quot; means the index moved in the warned direction; compare warning rows against the

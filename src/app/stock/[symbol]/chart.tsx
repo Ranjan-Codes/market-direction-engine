@@ -33,10 +33,10 @@ export function StockChart({ bars, snapshots }: { bars: Bar[]; snapshots: Snap[]
     if (!ref.current) return;
     const chart: IChartApi = createChart(ref.current, {
       height: 560,
-      layout: { background: { color: "#09090b" }, textColor: "#a1a1aa", panes: { separatorColor: "#27272a" } },
-      grid: { vertLines: { color: "#18181b" }, horzLines: { color: "#18181b" } },
-      timeScale: { borderColor: "#3f3f46" },
-      rightPriceScale: { borderColor: "#3f3f46" },
+      layout: { background: { color: "#ffffff" }, textColor: "#52525b", panes: { separatorColor: "#e4e4e7" } },
+      grid: { vertLines: { color: "#f4f4f5" }, horzLines: { color: "#f4f4f5" } },
+      timeScale: { borderColor: "#d4d4d8" },
+      rightPriceScale: { borderColor: "#d4d4d8" },
     });
 
     const candles = chart.addSeries(CandlestickSeries, {
@@ -66,7 +66,7 @@ export function StockChart({ bars, snapshots }: { bars: Bar[]; snapshots: Snap[]
     line("#f97316", pick("ma_40w"), 0, 2);
 
     const vol = chart.addSeries(HistogramSeries, {
-      priceScaleId: "vol", color: "#3f3f46", priceLineVisible: false, lastValueVisible: false,
+      priceScaleId: "vol", color: "#d4d4d8", priceLineVisible: false, lastValueVisible: false,
     });
     chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
     vol.setData(bars.filter((b) => b.volume != null).map((b) => ({ time: b.time, value: b.volume! })));
@@ -78,7 +78,7 @@ export function StockChart({ bars, snapshots }: { bars: Bar[]; snapshots: Snap[]
         .filter((s) => s.macd_hist != null)
         .map((s) => ({ time: s.week_end, value: s.macd_hist!, color: s.macd_hist! >= 0 ? "#16a34a" : "#dc2626" })),
     );
-    line("#e4e4e7", pick("macd"), 2);
+    line("#3f3f46", pick("macd"), 2);
     line("#f59e0b", pick("macd_signal"), 2);
 
     const panes = chart.panes();

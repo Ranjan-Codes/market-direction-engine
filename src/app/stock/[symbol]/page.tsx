@@ -23,14 +23,14 @@ export default async function StockPage({ params }: { params: Promise<{ symbol: 
       <div className="flex items-baseline gap-3 flex-wrap">
         <WatchStar symbol={instrument.symbol} inList={watchSymbols.has(instrument.symbol)} />
         <h1 className="text-lg font-bold">{instrument.symbol}</h1>
-        <span className="text-sm text-zinc-400">{instrument.name}</span>
+        <span className="text-sm text-zinc-600">{instrument.name}</span>
         <span className="text-xs text-zinc-500">{instrument.metadata?.sector ?? ""} · {instrument.currency}</span>
         {signal && (
           <span
             className={`px-2 py-0.5 rounded border text-xs font-semibold ${
-              signal.direction === "bullish" ? "border-green-800 text-green-300"
-              : signal.direction === "bearish" ? "border-red-800 text-red-300"
-              : "border-zinc-700 text-zinc-300"
+              signal.direction === "bullish" ? "border-green-300 text-green-800"
+              : signal.direction === "bearish" ? "border-red-300 text-red-800"
+              : "border-zinc-400 text-zinc-700"
             }`}
           >
             {signal.direction} · conviction {Math.round(signal.conviction)}
@@ -38,7 +38,7 @@ export default async function StockPage({ params }: { params: Promise<{ symbol: 
           </span>
         )}
         {events.map((e: { event_name: string; release_at: string }, i: number) => (
-          <span key={i} className="text-xs text-sky-300">📅 {e.event_name.replace("Earnings: ", "earnings ")} {e.release_at.slice(0, 10)}</span>
+          <span key={i} className="text-xs text-sky-700">📅 {e.event_name.replace("Earnings: ", "earnings ")} {e.release_at.slice(0, 10)}</span>
         ))}
       </div>
 
@@ -79,14 +79,14 @@ export default async function StockPage({ params }: { params: Promise<{ symbol: 
             <table className="w-full text-xs">
               <tbody>
                 {Object.entries(factors).map(([k, v]) => (
-                  <tr key={k} className="border-t border-zinc-900">
-                    <td className="py-1 text-zinc-400">{k}</td>
-                    <td className={v != null && v > 0.3 ? "text-green-400" : v != null && v < -0.3 ? "text-red-400" : ""}>
+                  <tr key={k} className="border-t border-zinc-200">
+                    <td className="py-1 text-zinc-600">{k}</td>
+                    <td className={v != null && v > 0.3 ? "text-green-700" : v != null && v < -0.3 ? "text-red-700" : ""}>
                       {v == null ? "–" : v.toFixed(2)}
                     </td>
                     <td className="w-40">
                       {v != null && (
-                        <div className="h-1.5 bg-zinc-800 rounded relative">
+                        <div className="h-1.5 bg-zinc-200 rounded relative">
                           <div
                             className={`absolute top-0 h-1.5 rounded ${v >= 0 ? "bg-green-600" : "bg-red-600"}`}
                             style={{ left: v >= 0 ? "50%" : `${50 + v * 50}%`, width: `${Math.abs(v) * 50}%` }}
@@ -96,12 +96,12 @@ export default async function StockPage({ params }: { params: Promise<{ symbol: 
                     </td>
                   </tr>
                 ))}
-                <tr className="border-t border-zinc-700 font-semibold">
+                <tr className="border-t border-zinc-400 font-semibold">
                   <td className="py-1">composite</td>
                   <td colSpan={2}>{signal.composite_score}</td>
                 </tr>
                 {signal.gate_reason && (
-                  <tr><td colSpan={3} className="text-amber-400 pt-1">gate: {signal.gate_reason}</td></tr>
+                  <tr><td colSpan={3} className="text-amber-600 pt-1">gate: {signal.gate_reason}</td></tr>
                 )}
               </tbody>
             </table>
@@ -125,8 +125,8 @@ export default async function StockPage({ params }: { params: Promise<{ symbol: 
                     ["Resistance (13w)", fmtNum(latest.resistance, 2)],
                   ] as Array<[string, string]>
                 ).map(([k, v]) => (
-                  <tr key={k} className="border-t border-zinc-900">
-                    <td className="py-1 text-zinc-400">{k}</td>
+                  <tr key={k} className="border-t border-zinc-200">
+                    <td className="py-1 text-zinc-600">{k}</td>
                     <td className="font-semibold">{v}</td>
                   </tr>
                 ))}

@@ -75,10 +75,119 @@ export function marketVerdict(
   };
 }
 
+export interface Insight {
+  text: string;
+  tone: "good" | "warn" | "neutral";
+}
+
+interface RegimeLike {
+  symbol: string;
+  breadth_score: number | null;
+  breakdown: {
+    inputs: Record<string, Record<string, unknown> | null>;
+    gauge: { direction: string; intensity: number };
+  };
+  history: Array<{ date: string; composite: number; gaugeIntensity: number }>;
+}
+
+const n = (v: unknown): number | null => (typeof v === "number" && isFinite(v) ? v : null);
+
+/**
+ * Plain-English observations derived from the regime inputs — the "so what"
+ * layer. Each maps a number the engine already computed to a sentence a
+ * reader can act on.
+ */
+export function buildInsights(regimes: RegimeLike[]): Insight[] {
+  const out: Insight[] = [];
+  const us = regimes.find((r) => r.symbol === "SPX") ?? regimes[0];
+  if (!us) return out;
+  const im = us.breakdown.inputs?.intermarket ?? {};
+  const pos = us.breakdown.inputs?.positioning ?? {};
+
+  // Gauge trajectory per index — is warning pressure building or easing?
+  for (const r of regimes) {
+    const now = r.history.at(-1)?.gaugeIntensity ?? null;
+    const past = r.history.at(-5)?.gaugeIntensity ?? null;
+    if (now != null && past != null && Math.abs(now - past) >= 10) {
+      out.push({
+        tone: now > past ? "warn" : "good",
+        text:
+          now > past
+            ? `Warning pressure on the ${r.symbol === "SPX" ? "S&P 500" : r.symbol === "NDX" ? "Nasdaq" : "FTSE"} has been building — reversal evidence at ${now}/100 vs ${past} a month ago.`
+            : `Reversal pressure on ${r.symbol} is easing — ${now}/100 vs ${past} a month ago.`,
+      });
+    }
+  }
+
+  const curve = n(im["curve"]);
+  if (curve != null) {
+    out.push(
+      curve > 0.1
+        ? { tone: "good", text: `The US yield curve is comfortably positive (+${curve.toFixed(2)}%) — the classic recession warning from the bond market is absent.` }
+        : curve < 0
+          ? { tone: "warn", text: `The US yield curve is inverted (${curve.toFixed(2)}%) — historically a recession lead of 6–18 months.` }
+          : { tone: "neutral", text: "The US yield curve is roughly flat — the bond market is undecided." },
+    );
+  }
+  const hyZ = n(im["hyOasZ"]);
+  if (hyZ != null) {
+    out.push(
+      hyZ > 1
+        ? { tone: "warn", text: "Credit spreads are widening — bond investors are starting to price stress, which usually shows up before equities react." }
+        : hyZ < -0.5
+          ? { tone: "good", text: "Credit spreads are tighter than usual — bond investors see very little stress ahead." }
+          : { tone: "neutral", text: "Credit spreads sit near their recent norms — no stress signal from the bond market." },
+    );
+  }
+  const rot = n(im["cyclicalsVsDefensives13w"]);
+  if (rot != null && Math.abs(rot) > 0.03) {
+    out.push(
+      rot > 0
+        ? { tone: "good", text: `Cyclical sectors have beaten defensives by ${(rot * 100).toFixed(0)}% over 13 weeks — investors are still reaching for growth, not hiding.` }
+        : { tone: "warn", text: `Money has rotated into defensive sectors (${(rot * 100).toFixed(0)}% vs cyclicals over 13 weeks) — quiet risk-off behaviour under the surface.` },
+    );
+  }
+  const dxy = n(im["dxy13w"]);
+  if (dxy != null && Math.abs(dxy) > 0.03) {
+    out.push(
+      dxy > 0
+        ? { tone: "warn", text: `The dollar has strengthened ${(dxy * 100).toFixed(0)}% in 13 weeks — a headwind for equities if it continues.` }
+        : { tone: "good", text: `The dollar has weakened ${(-dxy * 100).toFixed(0)}% in 13 weeks — a tailwind for risk assets.` },
+    );
+  }
+  const vixP = n(pos["vixPctile"]);
+  if (vixP != null) {
+    if (vixP < 15) out.push({ tone: "warn", text: `Volatility sits in the ${vixP.toFixed(0)}th percentile of the last two years — markets this calm are complacent, and complacency precedes corrections.` });
+    else if (vixP > 85) out.push({ tone: "good", text: `Volatility is in the ${vixP.toFixed(0)}th percentile — fear this elevated has historically been closer to bottoms than tops.` });
+  }
+  const cotZ = n(pos["cotZ"]);
+  if (cotZ != null && Math.abs(cotZ) > 1.5) {
+    out.push({
+      tone: "warn",
+      text: cotZ > 0
+        ? "Speculators are unusually crowded on the long side of index futures — crowded trades unwind violently."
+        : "Speculators are unusually short index futures — heavy pessimism often fuels rebounds when it reverses.",
+    });
+  }
+  // Breadth health across indices.
+  for (const r of regimes) {
+    const b = r.breakdown.inputs?.breadth ?? {};
+    const p200 = n(b["pctAbove200d"]);
+    if (p200 != null && (p200 >= 75 || p200 <= 40)) {
+      out.push(
+        p200 >= 75
+          ? { tone: "good", text: `${r.symbol}: ${p200.toFixed(0)}% of members trade above their 200-day average — broad, healthy participation.` }
+          : { tone: "warn", text: `${r.symbol}: only ${p200.toFixed(0)}% of members are above their 200-day average — the rally is standing on few legs.` },
+      );
+    }
+  }
+  return out.slice(0, 7);
+}
+
 export const TONE_STYLE: Record<VerdictView["tone"], { border: string; text: string; chip: string }> = {
-  danger: { border: "border-red-700/70", text: "text-red-300", chip: "bg-red-950 text-red-300" },
-  opportunity: { border: "border-green-700/70", text: "text-green-300", chip: "bg-green-950 text-green-300" },
-  good: { border: "border-emerald-800/60", text: "text-emerald-300", chip: "bg-emerald-950 text-emerald-300" },
-  caution: { border: "border-amber-800/60", text: "text-amber-300", chip: "bg-amber-950 text-amber-200" },
-  bad: { border: "border-orange-800/70", text: "text-orange-300", chip: "bg-orange-950 text-orange-300" },
+  danger: { border: "border-red-300", text: "text-red-700", chip: "bg-red-100 text-red-800" },
+  opportunity: { border: "border-green-300", text: "text-green-700", chip: "bg-green-100 text-green-800" },
+  good: { border: "border-emerald-300", text: "text-emerald-700", chip: "bg-emerald-100 text-emerald-800" },
+  caution: { border: "border-amber-300", text: "text-amber-700", chip: "bg-amber-100 text-amber-800" },
+  bad: { border: "border-orange-300", text: "text-orange-700", chip: "bg-orange-100 text-orange-800" },
 };

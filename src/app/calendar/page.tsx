@@ -22,7 +22,7 @@ export default async function CalendarPage() {
           next 30 days · rows inside the 5-day signal-blackout window are highlighted
         </span>
       </h1>
-      <div className="border border-zinc-800 rounded bg-zinc-950">
+      <div className="border border-zinc-300 rounded bg-white">
         <HelpNote>
           The catalyst schedule — when the market gets new information that can trigger the moves the gauge
           warns about. <b>High importance</b> (red): CPI, jobs reports, central-bank decisions, mega-cap
@@ -43,28 +43,28 @@ export default async function CalendarPage() {
               {list.map((e, i) => (
                 <tr
                   key={i}
-                  className={`border-t border-zinc-900 ${day <= blackoutEndIso ? "bg-amber-950/30" : ""}`}
+                  className={`border-t border-zinc-200 ${day <= blackoutEndIso ? "bg-amber-50" : ""}`}
                 >
                   <td className="py-1 text-zinc-500">{e.release_at.slice(11, 16)}</td>
-                  <td className="text-zinc-400">{e.country}</td>
-                  <td className={e.event_name.startsWith("Earnings:") ? "text-sky-300" : ""}>{e.event_name}</td>
+                  <td className="text-zinc-600">{e.country}</td>
+                  <td className={e.event_name.startsWith("Earnings:") ? "text-sky-700" : ""}>{e.event_name}</td>
                   <td>
                     <span className={
-                      e.importance === "high" ? "text-red-400 font-semibold"
-                      : e.importance === "medium" ? "text-amber-400" : "text-zinc-500"
+                      e.importance === "high" ? "text-red-700 font-semibold"
+                      : e.importance === "medium" ? "text-amber-600" : "text-zinc-500"
                     }>
                       {e.importance}
                     </span>
                   </td>
                   <td>{e.consensus != null ? `${e.consensus}${e.unit ?? ""}` : "–"}</td>
-                  <td className="text-zinc-400">{e.previous != null ? `${e.previous}${e.unit ?? ""}` : "–"}</td>
+                  <td className="text-zinc-600">{e.previous != null ? `${e.previous}${e.unit ?? ""}` : "–"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </Panel>
       ))}
-      <p className="text-[10px] text-zinc-600">
+      <p className="text-[10px] text-zinc-400">
         Macro consensus/previous from the calendar feed (≈7-day forward visibility); earnings dates from
         exchange data (30+ days). Actual-vs-consensus surprise tracking arrives with the release actuals.
       </p>

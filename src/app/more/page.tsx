@@ -16,9 +16,9 @@ export default function MorePage() {
         <Link
           key={href}
           href={href}
-          className="block border border-zinc-800 rounded-xl p-4 bg-zinc-950 hover:bg-zinc-900/60"
+          className="block border border-zinc-300 rounded-xl p-4 bg-white hover:bg-zinc-50"
         >
-          <p className="font-semibold text-zinc-100">{title}</p>
+          <p className="font-semibold text-zinc-900">{title}</p>
           <p className="text-sm text-zinc-500">{desc}</p>
         </Link>
       ))}
