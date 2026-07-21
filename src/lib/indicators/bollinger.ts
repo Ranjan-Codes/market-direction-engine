@@ -30,7 +30,7 @@ export function bollinger(
   for (let i = 0; i < closes.length; i++) {
     const m = mid[i];
     const c = closes[i];
-    let point: BollingerPoint = {
+    const point: BollingerPoint = {
       upper: null, mid: m, lower: null, pctB: null,
       bandwidth: null, squeeze: false, bandWalk: null,
     };
