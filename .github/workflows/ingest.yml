@@ -77,8 +77,16 @@ jobs:
         run: npx tsx scripts/ingest-positioning.ts
 
       - name: Compute technical snapshots
-        if: contains(fromJSON('["weekend","backfill","technicals"]'), steps.job.outputs.type)
+        if: steps.job.outputs.type != 'universe'
         run: npx tsx scripts/compute-technicals.ts
+
+      - name: Compute breadth metrics
+        if: steps.job.outputs.type != 'universe'
+        run: npx tsx scripts/compute-breadth.ts
+
+      - name: Compute regime + reversal gauge
+        if: steps.job.outputs.type != 'universe'
+        run: npx tsx scripts/compute-regime.ts
 
       - name: Data quality checks
         if: steps.job.outputs.type != 'universe'
