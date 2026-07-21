@@ -68,6 +68,10 @@ jobs:
         if: steps.job.outputs.type != 'universe'
         run: npx tsx scripts/ingest-calendar.ts
 
+      - name: Earnings catalysts (top-25 per index)
+        if: steps.job.outputs.type != 'universe'
+        run: npx tsx scripts/ingest-earnings.ts
+
       - name: Positioning (CFTC COT)
         if: steps.job.outputs.type != 'universe'
         run: npx tsx scripts/ingest-positioning.ts

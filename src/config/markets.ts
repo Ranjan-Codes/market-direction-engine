@@ -93,6 +93,16 @@ export const INTERMARKET_INSTRUMENTS: AuxInstrument[] = [
 ];
 
 /**
+ * Earnings catalysts (north-star): each index's reversal-risk warnings cite
+ * upcoming earnings of its leading companies — top N by market cap (weight
+ * proxy), the largest `highImportanceTop` marked high-importance.
+ */
+export const EARNINGS_CATALYSTS = {
+  topByCap: 25,
+  highImportanceTop: 10,
+} as const;
+
+/**
  * Daily-bar retention for constituents (weekly bars keep full history).
  * Bounded to respect the Supabase free-tier 500 MB cap; indices and
  * intermarket instruments keep full daily history (small row counts).
