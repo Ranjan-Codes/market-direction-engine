@@ -45,8 +45,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: scripts/requirements.txt
       - name: Install FinBERT dependencies
-        run: pip install --quiet "transformers[torch]" psycopg[binary]
+        run: pip install --quiet -r scripts/requirements.txt
 
       - name: Cache FinBERT model
         uses: actions/cache@v4
