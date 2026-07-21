@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import {
-  createChart, CandlestickSeries, LineSeries, HistogramSeries, type IChartApi,
+  createChart, createTextWatermark, CandlestickSeries, LineSeries, HistogramSeries,
+  type IChartApi,
 } from "lightweight-charts";
 
 interface Bar {
@@ -84,6 +85,19 @@ export function StockChart({ bars, snapshots }: { bars: Bar[]; snapshots: Snap[]
     const panes = chart.panes();
     if (panes[1]) panes[1].setHeight(90);
     if (panes[2]) panes[2].setHeight(90);
+    // Label each pane so there's no guessing which line is what.
+    const label = (pane: number, text: string) => {
+      if (panes[pane]) {
+        createTextWatermark(panes[pane], {
+          horzAlign: "left",
+          vertAlign: "top",
+          lines: [{ text, color: "#a1a1aa", fontSize: 12 }],
+        });
+      }
+    };
+    label(0, "Price (weekly) · grey bars = volume");
+    label(1, "RSI (14) — above 70 overbought, below 30 oversold");
+    label(2, "MACD — green/red bars = momentum, orange = signal line");
     chart.timeScale().fitContent();
 
     const onResize = () => chart.applyOptions({ width: ref.current?.clientWidth ?? 800 });
@@ -95,5 +109,19 @@ export function StockChart({ bars, snapshots }: { bars: Bar[]; snapshots: Snap[]
     };
   }, [bars, snapshots]);
 
-  return <div ref={ref} className="w-full" />;
+  return (
+    <div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-500 mb-2">
+        <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-green-600 align-middle mr-1" />up week</span>
+        <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-red-600 align-middle mr-1" />down week</span>
+        <span><span className="inline-block w-4 h-0.5 bg-yellow-500 align-middle mr-1" />30-week avg</span>
+        <span><span className="inline-block w-4 h-0.5 bg-orange-500 align-middle mr-1" />40-week avg</span>
+        <span><span className="inline-block w-4 h-0.5 bg-indigo-400 align-middle mr-1" />Bollinger bands</span>
+        <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-zinc-300 align-middle mr-1" />volume</span>
+        <span><span className="inline-block w-4 h-0.5 bg-sky-400 align-middle mr-1" />RSI</span>
+        <span><span className="inline-block w-4 h-0.5 bg-amber-500 align-middle mr-1" />MACD signal</span>
+      </div>
+      <div ref={ref} className="w-full" />
+    </div>
+  );
 }
