@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Market Direction Engine
 
-## Getting Started
+Institutional-grade **market direction and technical signal decision-support tool**
+for a 2–6 week horizon. Combines a top-down macro/regime layer with bottom-up
+weekly technicals on index constituents; constituent signals are only promoted
+to actionable when the market regime permits them ("don't fight the tape").
 
-First, run the development server:
+> **Disclaimer:** analytical decision-support only. Not investment advice, not
+> automated trading, no order execution. All outputs are probabilistic.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## v1 universe
+
+S&P 500, Nasdaq 100, NYSE Composite (US) and FTSE 100 (UK) — full constituent
+depth, point-in-time membership where sources allow. Weekly bars primary;
+daily bars for freshness and breadth.
+
+## Architecture
+
+```
+GitHub Actions (scheduled, all heavy work)          Netlify (thin read layer)
+┌─────────────────────────────────────────┐        ┌───────────────────────┐
+│ ingestion → adjustment → indicators →   │ writes │ Next.js App Router    │
+│ sentiment scoring (FinBERT) → regime →  │──────▶ │ reads precomputed     │
+│ signals → backtests                     │        │ Supabase tables       │
+└─────────────────────────────────────────┘        └───────────────────────┘
+                     ▼
+             Supabase Postgres (RLS deny-by-default)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Free data sources only**, behind a provider abstraction
+  ([src/lib/providers](src/lib/providers/types.ts)) — app code never calls a
+  vendor directly. Priority, rate limits, and TTLs live in
+  [src/config/providers.ts](src/config/providers.ts).
+- Every stored datapoint carries `source`, `as_of`, and `ingested_at`.
+- Look-ahead prevention everywhere: vintaged macro observations, point-in-time
+  index membership, strict as-of selection in backtests.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Repository layout
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+supabase/migrations/   SQL schema (see supabase/README.md to apply)
+src/config/            markets universe, provider limits — no magic numbers in code
+src/lib/providers/     provider interfaces + registry (implementations in Phase 1)
+src/lib/utils/         shared pure functions (unit-tested)
+src/lib/env.ts         zod-validated env access
+.github/workflows/     CI + (later) scheduled ingestion/compute jobs
+```
 
-## Learn More
+## Setup
 
-To learn more about Next.js, take a look at the following resources:
+1. `npm install`
+2. Copy `.env.example` → `.env.local`, fill in Supabase + provider keys.
+   **Secrets never go in code or commits** — only `.env.local`, GitHub Actions
+   secrets, and Netlify env vars.
+3. Apply `supabase/migrations/` to the Supabase project (see
+   [supabase/README.md](supabase/README.md)).
+4. `npm run dev`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Commands
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Command             | Purpose           |
+| ------------------- | ----------------- |
+| `npm run dev`       | local dev server  |
+| `npm run lint`      | ESLint            |
+| `npm run typecheck` | `tsc --noEmit`    |
+| `npm test`          | vitest unit tests |
 
-## Deploy on Vercel
+## Build phases
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [x] **Phase 0** — scaffold: repo, schema, env handling, provider abstraction, CI
+- [ ] **Phase 1** — ingestion: OHLCV, constituents, corporate actions, macro, calendar
+- [ ] **Phase 2** — technical engine (Layer 2 indicators, reference-tested)
+- [ ] **Phase 3** — narrative/sentiment engine (RSS, GDELT, Reddit, StockTwits, FinBERT)
+- [ ] **Phase 3b** — regime engine (Layer 1)
+- [ ] **Phase 4** — signal synthesis + regime gate + event overlay
+- [ ] **Phase 5** — validation: backtesting, walk-forward, data-quality guards
+- [ ] **Phase 6** — UI (7 screens)
+- [ ] **Phase 7** — alerts & export
