@@ -88,6 +88,10 @@ jobs:
         if: steps.job.outputs.type != 'universe'
         run: npx tsx scripts/compute-regime.ts
 
+      - name: Compute signals (Layer 3)
+        if: steps.job.outputs.type != 'universe'
+        run: npx tsx scripts/compute-signals.ts
+
       - name: Data quality checks
         if: steps.job.outputs.type != 'universe'
         run: npx tsx scripts/quality-check.ts

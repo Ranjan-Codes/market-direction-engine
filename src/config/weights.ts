@@ -22,6 +22,30 @@ export const REGIME_WEIGHTS = {
 } as const;
 
 /**
+ * Layer-3 per-stock signal composite: factor weights over the weekly
+ * technical snapshot. Each factor is mapped to [-1, +1] before weighting;
+ * composite > +signalAt ⇒ bullish, < -signalAt ⇒ bearish.
+ */
+export const SIGNAL_WEIGHTS = {
+  factors: {
+    trendMa: 0.22, // price vs 30w/40w MAs + slopes + fresh cross
+    momentum: 0.2, // MACD histogram + RSI zone
+    divergence: 0.12, // weekly RSI divergence (leading)
+    relativeStrength: 0.18, // Mansfield RS vs own index
+    volume: 0.12, // volume confirmation + 20w ratio
+    bollinger: 0.08, // band walk + squeeze setup + %B extremes
+    range: 0.08, // 52w range position (stretched extremes contrarian)
+  },
+  signalAt: 0.15, // |composite| threshold for a direction
+  /** Suppress fresh actionable signals this many calendar days before a
+   *  high-importance macro release or the stock's own earnings. */
+  eventBlackoutDays: 5,
+  /** Neutral regime still allows longs when composite improved by this many
+   *  points over 4 weeks ("neutral-improving"). */
+  neutralImprovingBy: 5,
+} as const;
+
+/**
  * Reversal-risk gauge (north-star): evidence items and weights. Intensity =
  * 100 × Σ(present weights) / Σ(all weights); direction fires at ≥25.
  */
