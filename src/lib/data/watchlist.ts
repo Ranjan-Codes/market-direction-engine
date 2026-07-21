@@ -88,6 +88,21 @@ export async function getWatchlist(): Promise<WatchlistEntry[]> {
   }));
 }
 
+/** All watchable equities (for the add-stock search box). */
+export async function getWatchableSymbols(): Promise<
+  Array<{ symbol: string; name: string | null; index_symbol: string | null }>
+> {
+  const { rows } = await getPool().query(`
+    select i.symbol, i.name,
+           (select ix.symbol from index_membership m join instruments ix on ix.id = m.index_id
+             where m.constituent_id = i.id and m.valid_to is null
+             order by case ix.symbol when 'SPX' then 1 when 'NDX' then 2 else 3 end limit 1) as index_symbol
+      from instruments i
+     where i.is_active and i.instrument_type = 'equity'
+     order by i.symbol`);
+  return rows;
+}
+
 export async function getWatchlistSymbols(): Promise<Set<string>> {
   const { rows } = await getPool().query(
     `select i.symbol from watchlist_items w join instruments i on i.id = w.instrument_id`,

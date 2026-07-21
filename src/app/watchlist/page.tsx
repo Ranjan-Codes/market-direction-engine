@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { getWatchlist } from "../../lib/data/watchlist";
+import { getWatchlist, getWatchableSymbols } from "../../lib/data/watchlist";
 import { WatchStar } from "../../components/watch-star";
+import { AddStock } from "./add-stock";
 import { Panel, HelpNote, fmtNum } from "../../components/ui";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,7 @@ const VERDICT_STYLE: Record<string, string> = {
 };
 
 export default async function WatchlistPage() {
-  const entries = await getWatchlist();
+  const [entries, watchable] = await Promise.all([getWatchlist(), getWatchableSymbols()]);
 
   return (
     <div className="space-y-4">
@@ -27,6 +28,8 @@ export default async function WatchlistPage() {
           <Link href="/report" className="underline">print report</Link>
         </span>
       </h1>
+
+      <AddStock options={watchable} inList={entries.map((e) => e.symbol)} />
 
       <div className="border border-zinc-300 rounded bg-white">
         <HelpNote>
