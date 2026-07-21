@@ -1,64 +1,86 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { toggleWatchlist } from "./actions";
+import { searchStocks, addStock, type StockMatch } from "./actions";
 
-export interface SymbolOption {
-  symbol: string;
-  name: string | null;
-  index_symbol: string | null;
-}
-
-export function AddStock({
-  options,
-  inList,
-}: {
-  options: SymbolOption[];
-  inList: string[];
-}) {
+export function AddStock({ inList }: { inList: string[] }) {
   const [query, setQuery] = useState("");
+  const [matches, setMatches] = useState<StockMatch[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [adding, setAdding] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
-  const listed = useMemo(() => new Set(inList), [inList]);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const listed = new Set(inList);
 
-  const matches = useMemo(() => {
-    const q = query.trim().toUpperCase();
-    if (q.length < 1) return [];
-    return options
-      .filter(
-        (o) =>
-          !listed.has(o.symbol) &&
-          (o.symbol.toUpperCase().startsWith(q) ||
-            (o.name ?? "").toUpperCase().includes(q)),
-      )
-      .slice(0, 8);
-  }, [query, options, listed]);
+  useEffect(() => {
+    if (timer.current) clearTimeout(timer.current);
+    const q = query.trim();
+    timer.current = setTimeout(
+      async () => {
+        if (q.length < 1) {
+          setMatches([]);
+          setSearching(false);
+          return;
+        }
+        setSearching(true);
+        try {
+          const found = await searchStocks(q);
+          setMatches(found.filter((m) => !listed.has(m.symbol)));
+        } finally {
+          setSearching(false);
+        }
+      },
+      q.length < 1 ? 0 : 300,
+    );
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
-  const add = (symbol: string) => {
+  const add = (m: StockMatch) => {
+    setAdding(m.symbol);
+    setError(null);
     startTransition(async () => {
-      await toggleWatchlist(symbol);
+      const r = await addStock(m.symbol);
+      setAdding(null);
+      if (!r.ok) {
+        setError(r.error ?? "Could not add this stock.");
+        return;
+      }
       setQuery("");
+      setMatches([]);
       router.refresh();
     });
   };
 
   return (
-    <div className="relative max-w-md">
+    <div className="relative max-w-xl">
       <input
         type="text"
         value={query}
         disabled={pending}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Add a stock — type a ticker or company name…"
+        placeholder="Add any stock — ticker or company name (any exchange)…"
         className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-white placeholder:text-zinc-400 focus:outline-none focus:border-zinc-500"
       />
-      {matches.length > 0 && (
+      {adding && (
+        <p className="absolute z-20 mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-600">
+          Adding <b>{adding}</b> — fetching its full price history and computing indicators…
+        </p>
+      )}
+      {error && !adding && (
+        <p className="mt-1 text-xs text-red-700">{error}</p>
+      )}
+      {!adding && matches.length > 0 && (
         <ul className="absolute z-20 mt-1 w-full bg-white border border-zinc-300 rounded-lg shadow-lg overflow-hidden">
           {matches.map((m) => (
             <li key={m.symbol}>
               <button
-                onClick={() => add(m.symbol)}
+                onClick={() => add(m)}
                 disabled={pending}
                 className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-100 flex justify-between gap-2"
               >
@@ -66,15 +88,17 @@ export function AddStock({
                   <span className="font-semibold">{m.symbol}</span>{" "}
                   <span className="text-zinc-500">{m.name}</span>
                 </span>
-                <span className="text-xs text-zinc-400 shrink-0">{m.index_symbol} · + add</span>
+                <span className="text-xs text-zinc-400 shrink-0">
+                  {m.source === "universe" ? m.detail : `Yahoo · ${m.detail}`} · + add
+                </span>
               </button>
             </li>
           ))}
         </ul>
       )}
-      {query.trim().length > 0 && matches.length === 0 && (
+      {!adding && !searching && query.trim().length >= 2 && matches.length === 0 && (
         <p className="absolute z-20 mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-xs text-zinc-500">
-          No match — the universe is S&amp;P 500, Nasdaq-100 and FTSE 100 members (UK tickers end in .L).
+          No match found on any exchange — check the spelling or try the ticker.
         </p>
       )}
     </div>

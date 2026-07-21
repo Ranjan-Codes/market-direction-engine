@@ -102,7 +102,7 @@ export default function GuidePage() {
                 ["Bollinger bands (20w, 2σ)", "volatility envelope; %B = position in band; squeeze = coiled spring; band-walk = strong trend"],
                 ["30w / 40w MA", "the weekly versions of the 150/200-day institutional trend lines; golden/death cross when they cross"],
                 ["ADX / DMI", "trend strength (not direction); low ADX = chop, momentum signals muted"],
-                ["Mansfield RS", "stock performance relative to its own index vs its 52-week norm; positive = leader, negative = laggard"],
+                ["Mansfield RS", "stock performance relative to its benchmark index (its own index, or SPX/UKX for off-index names) vs its 52-week norm; positive = leader"],
                 ["OBV / A-D line", "cumulative volume flow; should confirm price — quiet accumulation/distribution shows here first"],
                 ["ATR", "average weekly range — how much the stock moves; context for stops/sizing"],
                 ["A/D breadth line", "cumulative advancers minus decliners across the index — participation"],

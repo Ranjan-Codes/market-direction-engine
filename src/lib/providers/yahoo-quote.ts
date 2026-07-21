@@ -17,6 +17,32 @@ export interface QuoteFacts {
   nextEarningsDate: string | null;
 }
 
+export interface SymbolSearchHit {
+  symbol: string;
+  name: string;
+  exchange: string;
+}
+
+/** Free-text symbol/company search across all Yahoo-covered exchanges. */
+export async function searchSymbols(query: string): Promise<SymbolSearchHit[]> {
+  const res = await yf.search(query, { quotesCount: 8, newsCount: 0 });
+  return res.quotes
+    .filter(
+      (q): q is typeof q & { symbol: string } =>
+        "symbol" in q && typeof q.symbol === "string" &&
+        "quoteType" in q && q.quoteType === "EQUITY",
+    )
+    .map((q) => {
+      const rec = q as unknown as Record<string, unknown>;
+      const str = (v: unknown): string | null => (typeof v === "string" ? v : null);
+      return {
+        symbol: q.symbol,
+        name: str(rec.shortname) ?? str(rec.longname) ?? q.symbol,
+        exchange: str(rec.exchDisp) ?? "",
+      };
+    });
+}
+
 const CHUNK = 50;
 
 export async function getQuoteFacts(symbols: string[]): Promise<QuoteFacts[]> {

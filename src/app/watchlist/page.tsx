@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getWatchlist, getWatchableSymbols } from "../../lib/data/watchlist";
+import { getWatchlist } from "../../lib/data/watchlist";
 import { WatchStar } from "../../components/watch-star";
 import { AddStock } from "./add-stock";
 import { Panel, HelpNote, fmtNum } from "../../components/ui";
@@ -15,21 +15,22 @@ const VERDICT_STYLE: Record<string, string> = {
 };
 
 export default async function WatchlistPage() {
-  const [entries, watchable] = await Promise.all([getWatchlist(), getWatchableSymbols()]);
+  const entries = await getWatchlist();
 
   return (
     <div className="space-y-4">
       <h1 className="text-lg font-bold">
         Watchlist{" "}
         <span className="text-xs font-normal text-zinc-500">
-          {entries.length} names · leading-indicator verdicts at the 2–6 week horizon · add names with the ☆
-          in the <Link href="/screener" className="underline">screener</Link> or on any stock page ·{" "}
+          {entries.length} names · leading-indicator verdicts at the 2–6 week horizon · add <b>any listed
+          stock</b> below (any exchange), or star index names in the{" "}
+          <Link href="/screener" className="underline">screener</Link> ·{" "}
           <a href="/api/export/watchlist" className="underline">export CSV</a> ·{" "}
           <Link href="/report" className="underline">print report</Link>
         </span>
       </h1>
 
-      <AddStock options={watchable} inList={entries.map((e) => e.symbol)} />
+      <AddStock inList={entries.map((e) => e.symbol)} />
 
       <div className="border border-zinc-300 rounded bg-white">
         <HelpNote>

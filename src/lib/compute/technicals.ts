@@ -160,7 +160,17 @@ export async function listTechnicalsTargets(): Promise<TechnicalsTarget[]> {
     id: r.id,
     symbol: r.symbol,
     instrument_type: r.instrument_type,
-    rsIndexKey: r.rs_index_key,
+    // Off-index (watch-only) equities still get a Mansfield RS benchmark:
+    // LSE names vs UKX, plain US tickers vs SPX; other exchanges omit RS.
+    rsIndexKey:
+      r.rs_index_key ??
+      (r.instrument_type !== "equity"
+        ? null
+        : r.symbol.endsWith(".L")
+          ? "UKX"
+          : r.symbol.includes(".") || r.symbol.includes("=")
+            ? null
+            : "SPX"),
   }));
 }
 
