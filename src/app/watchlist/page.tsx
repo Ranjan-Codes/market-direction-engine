@@ -22,7 +22,9 @@ export default async function WatchlistPage() {
         Watchlist{" "}
         <span className="text-xs font-normal text-zinc-500">
           {entries.length} names · leading-indicator verdicts at the 2–6 week horizon · add names with the ☆
-          in the <Link href="/screener" className="underline">screener</Link> or on any stock page
+          in the <Link href="/screener" className="underline">screener</Link> or on any stock page ·{" "}
+          <a href="/api/export/watchlist" className="underline">export CSV</a> ·{" "}
+          <Link href="/report" className="underline">print report</Link>
         </span>
       </h1>
 

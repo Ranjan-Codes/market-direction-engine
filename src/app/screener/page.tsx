@@ -11,7 +11,8 @@ export default async function ScreenerPage() {
       <h1 className="text-lg font-bold">
         Signal screener{" "}
         <span className="text-xs font-normal text-zinc-500">
-          week ending {signals[0]?.as_of_date} · {signals.length} constituents · 2–6 week horizon
+          week ending {signals[0]?.as_of_date} · {signals.length} constituents · 2–6 week horizon ·{" "}
+          <a href="/api/export/signals" className="underline">export CSV</a>
         </span>
       </h1>
       <ScreenerTable signals={signals} watchSymbols={[...watchSymbols]} />

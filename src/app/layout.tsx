@@ -18,6 +18,7 @@ const NAV = [
   ["/calendar", "Calendar"],
   ["/narrative", "Narrative"],
   ["/backtest", "Backtest"],
+  ["/report", "Report"],
   ["/settings", "Settings"],
 ] as const;
 

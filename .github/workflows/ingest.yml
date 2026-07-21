@@ -20,6 +20,10 @@ concurrency:
   group: ingestion
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  issues: write # alert delivery: one GitHub issue per new alert
+
 env:
   SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
   SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -91,6 +95,12 @@ jobs:
       - name: Compute signals (Layer 3)
         if: steps.job.outputs.type != 'universe'
         run: npx tsx scripts/compute-signals.ts
+
+      - name: Check alerts
+        if: steps.job.outputs.type != 'universe'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx tsx scripts/check-alerts.ts
 
       - name: Data quality checks
         if: steps.job.outputs.type != 'universe'
