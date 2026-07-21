@@ -57,6 +57,8 @@ export interface CorporateAction {
 export interface IndexConstituent {
   symbol: string;
   name?: string;
+  /** GICS/ICB sector when the source provides it — feeds defensive/cyclical reads. */
+  sector?: string;
   weight?: number;
   /** ISO date the membership record is valid from, when the source is point-in-time. */
   validFrom?: string;

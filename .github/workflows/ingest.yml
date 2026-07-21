@@ -1,0 +1,77 @@
+name: Ingestion
+
+on:
+  schedule:
+    # Daily EOD run Mon–Fri at 22:30 UTC — after US close year-round
+    # (20:00 UTC in EDT, 21:00 UTC in EST).
+    - cron: "30 22 * * 1-5"
+    # Weekend full pass: membership sync + settled weekly bars + quality.
+    - cron: "0 7 * * 6"
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Which job to run"
+        required: true
+        default: daily
+        type: choice
+        options: [daily, weekend, backfill, universe]
+
+concurrency:
+  group: ingestion
+  cancel-in-progress: false
+
+env:
+  SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+  FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: Resolve job type
+        id: job
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "type=${{ inputs.job }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "0 7 * * 6" ]; then
+            echo "type=weekend" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=daily" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Universe sync (weekend / universe / backfill)
+        if: contains(fromJSON('["weekend","universe","backfill"]'), steps.job.outputs.type)
+        run: npx tsx scripts/ingest-universe.ts
+
+      - name: OHLCV backfill (full history)
+        if: steps.job.outputs.type == 'backfill'
+        run: npx tsx scripts/ingest-ohlcv.ts --backfill
+
+      - name: OHLCV incremental
+        if: contains(fromJSON('["daily","weekend"]'), steps.job.outputs.type)
+        run: npx tsx scripts/ingest-ohlcv.ts
+
+      - name: Macro (FRED)
+        if: steps.job.outputs.type != 'universe'
+        run: npx tsx scripts/ingest-macro.ts
+
+      - name: Economic calendar
+        if: steps.job.outputs.type != 'universe'
+        run: npx tsx scripts/ingest-calendar.ts
+
+      - name: Positioning (CFTC COT)
+        if: steps.job.outputs.type != 'universe'
+        run: npx tsx scripts/ingest-positioning.ts
+
+      - name: Data quality checks
+        if: steps.job.outputs.type != 'universe'
+        run: npx tsx scripts/quality-check.ts

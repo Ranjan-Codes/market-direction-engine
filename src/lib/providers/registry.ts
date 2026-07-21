@@ -1,5 +1,5 @@
 import type { MarketDataProvider } from "./types";
-import { PROVIDER_PRIORITY } from "@/config/providers";
+import { PROVIDER_PRIORITY } from "../../config/providers";
 
 /**
  * Provider registry with primary → fallback routing.

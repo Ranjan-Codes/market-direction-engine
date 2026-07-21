@@ -1,4 +1,4 @@
-import type { RateLimit } from "@/lib/providers/types";
+import type { RateLimit } from "../lib/providers/types";
 
 /**
  * All provider limits, TTLs, and routing priority live here — config, not
@@ -7,14 +7,18 @@ import type { RateLimit } from "@/lib/providers/types";
  */
 
 export const PROVIDER_PRIORITY = {
-  /** Order matters: first provider that covers the symbol wins; rest are fallbacks. */
-  marketData: ["stooq", "yfinance", "tiingo", "twelvedata", "alphavantage", "eodhd"],
+  /**
+   * Order matters: first provider that covers the symbol wins; rest are
+   * fallbacks. Stooq was dropped 2026-07-21: its CSV endpoint now sits
+   * behind a JavaScript anti-bot verification wall and is unusable for
+   * scripted access.
+   */
+  marketData: ["yahoo", "tiingo", "twelvedata", "alphavantage", "eodhd"],
   macro: ["fred", "ons", "boe", "bls"],
 } as const;
 
 export const RATE_LIMITS: Record<string, RateLimit> = {
-  stooq: { minIntervalMs: 1_000 },              // no published API limit; be polite
-  yfinance: { requestsPerMinute: 30 },          // unofficial — conservative
+  yahoo: { requestsPerMinute: 60, minIntervalMs: 400 }, // unofficial — conservative
   alphavantage: { requestsPerDay: 25 },         // free tier hard cap
   tiingo: { requestsPerDay: 500, requestsPerMinute: 50 },
   twelvedata: { requestsPerDay: 800, requestsPerMinute: 8 },
