@@ -2,6 +2,8 @@ import { loadEnvLocal } from "../src/lib/load-env";
 import { closePool, getPool } from "../src/lib/db";
 import { withIngestionRun } from "../src/lib/ingest/log";
 import { CONSTITUENT_DAILY_RETENTION_DAYS } from "../src/config/markets";
+import { INDICATOR_PARAMS } from "../src/config/indicators";
+import { HISTORY_START } from "../src/lib/ingest/ohlcv";
 
 /**
  * Data-quality guards (guardrail: never fabricate or silently backfill —
@@ -131,12 +133,19 @@ async function main(): Promise<void> {
       });
     }
 
-    // Retention prune (equities only)
+    // Retention prunes: equity daily bars, pre-HISTORY_START weekly bars,
+    // and technical snapshots beyond the snapshot window.
     const { rowCount: pruned } = await pool.query(
       `delete from ohlcv_daily o using instruments i
         where i.id = o.instrument_id and i.instrument_type = 'equity'
           and o.trade_date < current_date - $1::int`,
       [CONSTITUENT_DAILY_RETENTION_DAYS],
+    );
+    await pool.query(`delete from ohlcv_weekly where week_end < $1`, [HISTORY_START]);
+    await pool.query(
+      `delete from technical_snapshots
+        where week_end < current_date - ($1::int * 7)`,
+      [INDICATOR_PARAMS.snapshotRetentionWeeks],
     );
 
     for (const p of problems) {

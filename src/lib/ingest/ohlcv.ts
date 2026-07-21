@@ -15,7 +15,9 @@ import { weekStartMonday } from "../utils/weeks";
  *   window must never overwrite a settled weekly bar).
  */
 
-export const HISTORY_START = "1990-01-01";
+// 2000+ keeps two full bear/bull cycles for weekly-horizon backtests while
+// fitting the Supabase free tier (1990 start put the DB at 89% of the cap).
+export const HISTORY_START = "2000-01-01";
 const INCREMENTAL_OVERLAP_DAYS = 14;
 
 export interface InstrumentRow {

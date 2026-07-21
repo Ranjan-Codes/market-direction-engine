@@ -14,7 +14,7 @@ on:
         required: true
         default: daily
         type: choice
-        options: [daily, weekend, backfill, universe]
+        options: [daily, weekend, backfill, universe, technicals]
 
 concurrency:
   group: ingestion
@@ -71,6 +71,10 @@ jobs:
       - name: Positioning (CFTC COT)
         if: steps.job.outputs.type != 'universe'
         run: npx tsx scripts/ingest-positioning.ts
+
+      - name: Compute technical snapshots
+        if: contains(fromJSON('["weekend","backfill","technicals"]'), steps.job.outputs.type)
+        run: npx tsx scripts/compute-technicals.ts
 
       - name: Data quality checks
         if: steps.job.outputs.type != 'universe'
