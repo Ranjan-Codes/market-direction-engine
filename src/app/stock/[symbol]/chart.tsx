@@ -5,29 +5,21 @@ import {
   createChart, createTextWatermark, CandlestickSeries, LineSeries, HistogramSeries,
   type IChartApi,
 } from "lightweight-charts";
+import type { ChartBar, OverlayPoint } from "../../../lib/compute/chart-overlays";
 
-interface Bar {
-  time: string;
-  open: number | null;
-  high: number | null;
-  low: number | null;
-  close: number | null;
-  volume: number | null;
-}
-interface Snap {
-  week_end: string;
-  rsi_14: number | null;
-  macd: number | null;
-  macd_signal: number | null;
-  macd_hist: number | null;
-  bb_upper: number | null;
-  bb_mid: number | null;
-  bb_lower: number | null;
-  ma_30w: number | null;
-  ma_40w: number | null;
-}
-
-export function StockChart({ bars, snapshots }: { bars: Bar[]; snapshots: Snap[] }) {
+export function StockChart({
+  bars,
+  overlays,
+  maFastLabel,
+  maSlowLabel,
+  unit,
+}: {
+  bars: ChartBar[];
+  overlays: OverlayPoint[];
+  maFastLabel: string;
+  maSlowLabel: string;
+  unit: string;
+}) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,16 +47,16 @@ export function StockChart({ bars, snapshots }: { bars: Bar[]; snapshots: Snap[]
       s.setData(data);
       return s;
     };
-    const pick = (key: keyof Snap) =>
-      snapshots
-        .filter((s) => s[key] != null)
-        .map((s) => ({ time: s.week_end, value: s[key] as number }));
+    const pick = (key: keyof OverlayPoint) =>
+      overlays
+        .filter((o) => o[key] != null)
+        .map((o) => ({ time: o.time, value: o[key] as number }));
 
-    line("#818cf8", pick("bb_upper"));
-    line("#52525b", pick("bb_mid"));
-    line("#818cf8", pick("bb_lower"));
-    line("#eab308", pick("ma_30w"), 0, 2);
-    line("#f97316", pick("ma_40w"), 0, 2);
+    line("#818cf8", pick("bbUpper"));
+    line("#a1a1aa", pick("bbMid"));
+    line("#818cf8", pick("bbLower"));
+    line("#eab308", pick("maFast"), 0, 2);
+    line("#f97316", pick("maSlow"), 0, 2);
 
     const vol = chart.addSeries(HistogramSeries, {
       priceScaleId: "vol", color: "#d4d4d8", priceLineVisible: false, lastValueVisible: false,
@@ -72,32 +64,31 @@ export function StockChart({ bars, snapshots }: { bars: Bar[]; snapshots: Snap[]
     chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
     vol.setData(bars.filter((b) => b.volume != null).map((b) => ({ time: b.time, value: b.volume! })));
 
-    line("#38bdf8", pick("rsi_14"), 1, 2);
+    line("#38bdf8", pick("rsi"), 1, 2);
     const macdHist = chart.addSeries(HistogramSeries, { priceLineVisible: false, lastValueVisible: false }, 2);
     macdHist.setData(
-      snapshots
-        .filter((s) => s.macd_hist != null)
-        .map((s) => ({ time: s.week_end, value: s.macd_hist!, color: s.macd_hist! >= 0 ? "#16a34a" : "#dc2626" })),
+      overlays
+        .filter((o) => o.macdHist != null)
+        .map((o) => ({ time: o.time, value: o.macdHist!, color: o.macdHist! >= 0 ? "#16a34a" : "#dc2626" })),
     );
     line("#3f3f46", pick("macd"), 2);
-    line("#f59e0b", pick("macd_signal"), 2);
+    line("#f59e0b", pick("macdSignal"), 2);
 
     const panes = chart.panes();
-    if (panes[1]) panes[1].setHeight(90);
-    if (panes[2]) panes[2].setHeight(90);
-    // Label each pane so there's no guessing which line is what.
-    const label = (pane: number, text: string) => {
-      if (panes[pane]) {
-        createTextWatermark(panes[pane], {
+    const wm = (paneIdx: number, text: string) => {
+      if (panes[paneIdx]) {
+        createTextWatermark(panes[paneIdx], {
           horzAlign: "left",
           vertAlign: "top",
           lines: [{ text, color: "#a1a1aa", fontSize: 12 }],
         });
       }
     };
-    label(0, "Price (weekly) · grey bars = volume");
-    label(1, "RSI (14) — above 70 overbought, below 30 oversold");
-    label(2, "MACD — green/red bars = momentum, orange = signal line");
+    wm(0, `Price (${unit}ly) · grey bars = volume`);
+    wm(1, "RSI (14) — above 70 overbought, below 30 oversold");
+    wm(2, "MACD — green/red bars = momentum, orange = signal line");
+    if (panes[1]) panes[1].setHeight(90);
+    if (panes[2]) panes[2].setHeight(90);
     chart.timeScale().fitContent();
 
     const onResize = () => chart.applyOptions({ width: ref.current?.clientWidth ?? 800 });
@@ -107,15 +98,15 @@ export function StockChart({ bars, snapshots }: { bars: Bar[]; snapshots: Snap[]
       window.removeEventListener("resize", onResize);
       chart.remove();
     };
-  }, [bars, snapshots]);
+  }, [bars, overlays, unit]);
 
   return (
     <div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-500 mb-2">
-        <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-green-600 align-middle mr-1" />up week</span>
-        <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-red-600 align-middle mr-1" />down week</span>
-        <span><span className="inline-block w-4 h-0.5 bg-yellow-500 align-middle mr-1" />30-week avg</span>
-        <span><span className="inline-block w-4 h-0.5 bg-orange-500 align-middle mr-1" />40-week avg</span>
+        <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-green-600 align-middle mr-1" />up {unit}</span>
+        <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-red-600 align-middle mr-1" />down {unit}</span>
+        <span><span className="inline-block w-4 h-0.5 bg-yellow-500 align-middle mr-1" />{maFastLabel}</span>
+        <span><span className="inline-block w-4 h-0.5 bg-orange-500 align-middle mr-1" />{maSlowLabel}</span>
         <span><span className="inline-block w-4 h-0.5 bg-indigo-400 align-middle mr-1" />Bollinger bands</span>
         <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-zinc-300 align-middle mr-1" />volume</span>
         <span><span className="inline-block w-4 h-0.5 bg-sky-400 align-middle mr-1" />RSI</span>

@@ -1,4 +1,7 @@
 import { getPool } from "../db";
+import {
+  aggregateMonthly, computeOverlays, type ChartBar, type Timeframe,
+} from "../compute/chart-overlays";
 
 /**
  * Server-side read layer for the UI. All queries run in Next.js server
@@ -148,7 +151,7 @@ export async function getEvents(daysAhead = 30) {
   return rows;
 }
 
-export async function getStockDetail(symbol: string) {
+export async function getStockDetail(symbol: string, timeframe: Timeframe = "weekly") {
   const pool = getPool();
   const { rows: inst } = await pool.query(
     `select id, symbol, name, currency, metadata from instruments where symbol = $1`,
@@ -156,14 +159,24 @@ export async function getStockDetail(symbol: string) {
   );
   if (inst.length === 0) return null;
   const id = inst[0].id;
+  const barsQuery =
+    timeframe === "daily"
+      ? pool.query(
+          `select trade_date::text as time, adj_open::float8 as open, adj_high::float8 as high,
+                  adj_low::float8 as low, adj_close::float8 as close, volume::float8
+             from ohlcv_daily where instrument_id = $1 and adj_close is not null
+            order by trade_date`,
+          [id],
+        )
+      : pool.query(
+          `select week_end::text as time, adj_open::float8 as open, adj_high::float8 as high,
+                  adj_low::float8 as low, adj_close::float8 as close, volume::float8
+             from ohlcv_weekly where instrument_id = $1 and adj_close is not null
+            order by week_end`,
+          [id],
+        );
   const [bars, snapshots, signal, events] = await Promise.all([
-    pool.query(
-      `select week_end::text as time, adj_open::float8 as open, adj_high::float8 as high,
-              adj_low::float8 as low, adj_close::float8 as close, volume::float8
-         from ohlcv_weekly where instrument_id = $1 and adj_close is not null
-        order by week_end`,
-      [id],
-    ),
+    barsQuery,
     pool.query(
       `select week_end::text, rsi_14::float8, macd::float8, macd_signal::float8,
               macd_hist::float8, bb_upper::float8, bb_mid::float8, bb_lower::float8,
@@ -186,9 +199,13 @@ export async function getStockDetail(symbol: string) {
       [symbol],
     ),
   ]);
+  const chartBars: ChartBar[] =
+    timeframe === "monthly" ? aggregateMonthly(bars.rows) : bars.rows;
   return {
     instrument: inst[0],
-    bars: bars.rows,
+    timeframe,
+    bars: chartBars,
+    overlays: computeOverlays(chartBars, timeframe),
     snapshots: snapshots.rows,
     signal: signal.rows[0] ?? null,
     events: events.rows,

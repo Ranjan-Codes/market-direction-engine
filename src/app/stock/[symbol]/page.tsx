@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { getStockDetail } from "../../../lib/data/queries";
+import { TIMEFRAME_PARAMS, type Timeframe } from "../../../lib/compute/chart-overlays";
 import { getWatchlistSymbols } from "../../../lib/data/watchlist";
 import { Panel, fmtNum } from "../../../components/ui";
 import { WatchStar } from "../../../components/watch-star";
@@ -7,14 +9,23 @@ import { StockChart } from "./chart";
 
 export const dynamic = "force-dynamic";
 
-export default async function StockPage({ params }: { params: Promise<{ symbol: string }> }) {
+export default async function StockPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ symbol: string }>;
+  searchParams: Promise<{ tf?: string }>;
+}) {
   const { symbol } = await params;
+  const { tf } = await searchParams;
+  const timeframe: Timeframe = tf === "daily" || tf === "monthly" ? tf : "weekly";
   const [detail, watchSymbols] = await Promise.all([
-    getStockDetail(decodeURIComponent(symbol)),
+    getStockDetail(decodeURIComponent(symbol), timeframe),
     getWatchlistSymbols(),
   ]);
   if (!detail) notFound();
-  const { instrument, bars, snapshots, signal, events } = detail;
+  const { instrument, bars, overlays, snapshots, signal, events } = detail;
+  const tfParams = TIMEFRAME_PARAMS[timeframe];
   const latest = snapshots.at(-1);
   const factors = signal?.sub_scores?.factors as Record<string, number | null> | undefined;
 
@@ -42,8 +53,30 @@ export default async function StockPage({ params }: { params: Promise<{ symbol: 
         ))}
       </div>
 
+      <div className="flex items-center gap-1 text-xs">
+        {(["daily", "weekly", "monthly"] as const).map((t) => (
+          <Link
+            key={t}
+            href={`/stock/${encodeURIComponent(instrument.symbol)}${t === "weekly" ? "" : `?tf=${t}`}`}
+            className={`px-3 py-1 rounded-full border ${
+              t === timeframe
+                ? "bg-zinc-800 text-white border-zinc-800"
+                : "bg-white text-zinc-600 border-zinc-300 hover:bg-zinc-100"
+            }`}
+          >
+            {t[0].toUpperCase() + t.slice(1)}
+          </Link>
+        ))}
+        {timeframe === "daily" && (
+          <span className="text-zinc-500 ml-2">daily history kept for ~3 years</span>
+        )}
+        {timeframe === "weekly" && (
+          <span className="text-zinc-500 ml-2">the app&apos;s signals are computed on this frame</span>
+        )}
+      </div>
+
       <Panel
-        title="Weekly chart (adjusted) — Bollinger 20/2σ, 30w & 40w MAs, volume, RSI, MACD"
+        title={`${timeframe[0].toUpperCase() + timeframe.slice(1)} chart (adjusted) — Bollinger, ${tfParams.maFastLabel} & ${tfParams.maSlowLabel}, volume, RSI, MACD`}
         asOf={bars.at(-1)?.time}
         help={
           <>
@@ -59,7 +92,13 @@ export default async function StockPage({ params }: { params: Promise<{ symbol: 
           </>
         }
       >
-        <StockChart bars={bars} snapshots={snapshots} />
+        <StockChart
+          bars={bars}
+          overlays={overlays}
+          maFastLabel={tfParams.maFastLabel}
+          maSlowLabel={tfParams.maSlowLabel}
+          unit={tfParams.unit}
+        />
       </Panel>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
