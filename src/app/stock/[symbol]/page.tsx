@@ -1,13 +1,18 @@
 import { notFound } from "next/navigation";
 import { getStockDetail } from "../../../lib/data/queries";
+import { getWatchlistSymbols } from "../../../lib/data/watchlist";
 import { Panel, fmtNum } from "../../../components/ui";
+import { WatchStar } from "../../../components/watch-star";
 import { StockChart } from "./chart";
 
 export const dynamic = "force-dynamic";
 
 export default async function StockPage({ params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = await params;
-  const detail = await getStockDetail(decodeURIComponent(symbol));
+  const [detail, watchSymbols] = await Promise.all([
+    getStockDetail(decodeURIComponent(symbol)),
+    getWatchlistSymbols(),
+  ]);
   if (!detail) notFound();
   const { instrument, bars, snapshots, signal, events } = detail;
   const latest = snapshots.at(-1);
@@ -16,6 +21,7 @@ export default async function StockPage({ params }: { params: Promise<{ symbol: 
   return (
     <div className="space-y-4">
       <div className="flex items-baseline gap-3 flex-wrap">
+        <WatchStar symbol={instrument.symbol} inList={watchSymbols.has(instrument.symbol)} />
         <h1 className="text-lg font-bold">{instrument.symbol}</h1>
         <span className="text-sm text-zinc-400">{instrument.name}</span>
         <span className="text-xs text-zinc-500">{instrument.metadata?.sector ?? ""} · {instrument.currency}</span>

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { SignalRow } from "../../lib/data/queries";
+import { WatchStar } from "../../components/watch-star";
 
 const FACTORS = ["trendMa", "momentum", "divergence", "relativeStrength", "volume", "bollinger", "range"] as const;
 
@@ -13,7 +14,14 @@ function cellColor(v: number | null | undefined): string {
   return "text-zinc-400";
 }
 
-export function ScreenerTable({ signals }: { signals: SignalRow[] }) {
+export function ScreenerTable({
+  signals,
+  watchSymbols,
+}: {
+  signals: SignalRow[];
+  watchSymbols: string[];
+}) {
+  const watched = useMemo(() => new Set(watchSymbols), [watchSymbols]);
   const [index, setIndex] = useState("all");
   const [direction, setDirection] = useState("all");
   const [status, setStatus] = useState("all");
@@ -67,6 +75,7 @@ export function ScreenerTable({ signals }: { signals: SignalRow[] }) {
         <table className="w-full text-xs whitespace-nowrap">
           <thead className="text-zinc-500 text-left bg-zinc-900 sticky top-0">
             <tr>
+              <th className="px-1 py-1.5 w-6"></th>
               <th className="px-2 py-1.5">Symbol</th>
               <th>Index</th>
               <th>Sector</th>
@@ -79,6 +88,9 @@ export function ScreenerTable({ signals }: { signals: SignalRow[] }) {
           <tbody>
             {filtered.slice(0, 400).map((s) => (
               <tr key={s.symbol} className="border-t border-zinc-900 hover:bg-zinc-900">
+                <td className="px-1 py-1">
+                  <WatchStar symbol={s.symbol} inList={watched.has(s.symbol)} />
+                </td>
                 <td className="px-2 py-1 font-semibold">
                   <Link href={`/stock/${encodeURIComponent(s.symbol)}`} className="hover:underline">
                     {s.symbol}

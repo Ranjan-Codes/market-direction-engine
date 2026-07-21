@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 
 const NAV = [
   ["/", "Regime"],
+  ["/watchlist", "Watchlist"],
   ["/screener", "Screener"],
   ["/calendar", "Calendar"],
   ["/narrative", "Narrative"],
