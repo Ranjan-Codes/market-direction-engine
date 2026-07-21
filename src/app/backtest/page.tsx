@@ -1,5 +1,5 @@
 import { getBacktestReport } from "../../lib/data/queries";
-import { Panel, fmtNum, fmtPct } from "../../components/ui";
+import { Panel, HelpNote, fmtNum, fmtPct } from "../../components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +25,22 @@ export default async function BacktestPage() {
           run #{run.id} · weights {run.weights_version} · {run.period_start} → {run.period_end}
         </span>
       </h1>
+
+      <div className="border border-zinc-800 rounded bg-zinc-950">
+        <HelpNote>
+          The honesty page: the live signal code replayed over history with strict point-in-time data.
+          Column meanings — <b>n</b>: signal-weeks in the segment. <b>Hit</b>: % that moved the signalled
+          direction over 4 weeks (50% = coin flip; sustained 53–55% with positive averages is a real edge at
+          this horizon). <b>Avg 2w/4w/6w</b>: average signed forward return per signal. <b>Expectancy</b>:
+          average P&L per signal combining win rate and win/loss sizes — the single best summary number.
+          <b> PF</b> (profit factor): gross wins ÷ gross losses; above 1.2 decent, below 1 loses money.
+          <b> Max DD</b>: worst peak-to-trough of an equal-weighted strategy of these signals. How to read
+          the groups: <i>by regime</i> shows why the gate exists (same signals, +1%/4w in risk-on vs −8.7%
+          in risk-off); <i>gauge</i> rows must be compared against <i>baseline-all-index-weeks</i> — the
+          gauge&apos;s value is that post-warning weeks average far below the baseline drift. Read the
+          caveats panel before trusting any row.
+        </HelpNote>
+      </div>
 
       {GROUPS.map(([type, label]) => {
         const rows = results.filter((r: { segment_type: string }) => r.segment_type === type);

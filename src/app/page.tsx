@@ -3,7 +3,7 @@ import {
   getRegimes, getBreadthLatest, getIntermarket, getMacroSnapshot, getDataHealth,
 } from "../lib/data/queries";
 import {
-  GaugeDial, RegimeBadge, Sparkline, Panel, Tag, fmtNum, fmtPct,
+  GaugeDial, RegimeBadge, Sparkline, Panel, Tag, HelpNote, fmtNum, fmtPct,
 } from "../components/ui";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +23,20 @@ export default async function RegimeDashboard() {
       )}
 
       {/* North-star: reversal-risk gauges first */}
+      <div className="border border-zinc-800 rounded bg-zinc-950">
+        <HelpNote>
+          <b>The reversal-risk gauge is this app&apos;s headline instrument.</b> It answers one question per
+          index: is the market stretched enough that a turn is likely within the next 2–6 weeks?{" "}
+          <b>Red = overbought</b> → elevated risk of profit-booking/sell-off; <b>green = oversold</b> →
+          rebound setup. The number is intensity 0–100: the share of weighted warning evidence currently
+          present (it fires at ≥25 — more independent warnings, higher the number). The bullets are the
+          exact evidence; the <b>catalysts</b> line lists the scheduled macro releases and heavyweight
+          earnings that could trigger the move — a stretched market plus a dense catalyst window is the
+          highest-risk combination. The sparkline is the regime composite&apos;s history (dotted line = 50
+          neutral). How to act: <i>overbought + catalysts near</i> → consider tightening stops/trimming into
+          strength; <i>oversold</i> → prepare a buy list; <i>none</i> → let the regime and screener drive.
+        </HelpNote>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {regimes.map((r) => {
           const g = r.breakdown.gauge;
@@ -89,7 +103,24 @@ export default async function RegimeDashboard() {
       </div>
 
       {/* Sub-scores */}
-      <Panel title="Regime sub-scores (0–100, 50 = neutral)" asOf={regimes[0]?.as_of_date}>
+      <Panel
+        title="Regime sub-scores (0–100, 50 = neutral)"
+        asOf={regimes[0]?.as_of_date}
+        help={
+          <>
+            Each sub-score condenses one evidence family into 0–100 (above 60 supportive, below 40 hostile).
+            <b> Trend</b>: the index vs its 30/40-week averages, weekly MACD and RSI — confirms, rarely
+            leads. <b>Breadth</b>: how many members participate — deteriorating breadth under a rising index
+            is the classic early warning. <b>Intermarket</b>: yield curve, credit spreads, dollar,
+            copper/gold, cyclical-vs-defensive sectors — cross-asset stress usually shows here first.
+            <b> Positioning</b>: futures positioning and VIX read <i>contrarian at extremes</i> — crowded
+            trades reverse. <b>Narrative</b>: FinBERT news tone — noisiest input, deliberately capped at 15%
+            weight. The <b>composite</b> is the weighted blend (weights in Settings): ≥60 = risk-on (longs
+            actionable), ≤40 = risk-off (defensive), between = neutral. Missing sub-scores (n/a) are
+            excluded and weights renormalised.
+          </>
+        }
+      >
         <table className="w-full text-xs">
           <thead className="text-zinc-500 text-left">
             <tr>
@@ -119,7 +150,23 @@ export default async function RegimeDashboard() {
       </Panel>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Panel title="Breadth internals" tag="leading" asOf={breadth[0]?.as_of}>
+        <Panel
+          title="Breadth internals"
+          tag="leading"
+          asOf={breadth[0]?.as_of}
+          help={
+            <>
+              The market&apos;s engine room — indices are cap-weighted, so a few mega-caps can hide broad
+              deterioration. <b>Adv/Dec</b>: yesterday&apos;s advancing vs declining members. <b>%&gt;50d /
+              %&gt;200d</b>: members above their moving averages — above ~60% healthy, below ~40% weak, under
+              15% is washout (a rebound condition). <b>52w H/L</b>: new 52-week highs vs lows. <b>McClellan
+              oscillator</b>: momentum of net advances; positive = broadening participation, negative while
+              the index sits near highs = narrowing leadership (a gauge input). <b>Divergence = YES</b> is
+              the single most important cell on this panel: the index is near highs while participation
+              decays — historically an early warning, not a same-day signal.
+            </>
+          }
+        >
           <table className="w-full text-xs">
             <thead className="text-zinc-500 text-left">
               <tr><th className="py-1">Index</th><th>Adv/Dec</th><th>%&gt;50d</th><th>%&gt;200d</th><th>52w H/L</th><th>McClellan</th><th>Divergence</th></tr>
@@ -140,7 +187,21 @@ export default async function RegimeDashboard() {
           </table>
         </Panel>
 
-        <Panel title="Intermarket (13-week change)" tag="leading" asOf={intermarket[0]?.week_end}>
+        <Panel
+          title="Intermarket (13-week change)"
+          tag="leading"
+          asOf={intermarket[0]?.week_end}
+          help={
+            <>
+              Cross-asset reads that often move before equities. <b>VIX</b> falling/low = calm (extremes =
+              complacency, a contrarian warning). <b>Oil & copper</b> up = cyclical demand;{" "}
+              <b>copper rising vs gold falling</b> is a growth signal, the reverse is defensive.{" "}
+              <b>DXY (dollar)</b> up = headwind for equities and commodities. <b>Sector ETFs</b>: when
+              cyclicals (XLK/XLF/XLY/XLI) outrun defensives (XLP/XLU/XLV), risk appetite is healthy; money
+              hiding in defensives while the index rises is another form of divergence.
+            </>
+          }
+        >
           <table className="w-full text-xs">
             <thead className="text-zinc-500 text-left">
               <tr><th className="py-1">Instrument</th><th>Role</th><th>Last</th><th>13w Δ</th></tr>
@@ -162,7 +223,20 @@ export default async function RegimeDashboard() {
         </Panel>
       </div>
 
-      <Panel title="Macro snapshot (latest observation per series)">
+      <Panel
+        title="Macro snapshot (latest observation per series)"
+        help={
+          <>
+            Latest official value per series, with its release date (monthly series lag by design — check
+            the obs date). For the 2–6 week horizon the <b>leading</b> series matter most: yield-curve
+            spreads (negative = inverted = classic recession lead), credit spreads (HY OAS rising = risk
+            appetite deteriorating before equities notice), initial claims (trend up = labour cracking),
+            building permits and consumer sentiment. <b>Coincident</b> series (payrolls, policy rates)
+            confirm; <b>lagging</b> ones (CPI, unemployment) matter mainly through the policy reaction —
+            i.e. via the calendar events they feed.
+          </>
+        }
+      >
         <table className="w-full text-xs">
           <thead className="text-zinc-500 text-left">
             <tr><th className="py-1">Series</th><th></th><th>Country</th><th>Value</th><th>Obs date</th></tr>
@@ -181,7 +255,16 @@ export default async function RegimeDashboard() {
         </table>
       </Panel>
 
-      <Panel title="Pipeline health">
+      <Panel
+        title="Pipeline health"
+        help={
+          <>
+            Data trust panel: left = how fresh each data class is (amber when more than 4 days behind —
+            stale-but-flagged beats silently wrong); right = the latest run status of each ingestion/compute
+            job. If anything here is red or stale, treat every other panel with suspicion first.
+          </>
+        }
+      >
         <div className="grid grid-cols-2 gap-4 text-xs">
           <table>
             <tbody>

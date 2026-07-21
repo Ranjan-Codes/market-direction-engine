@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getWatchlist } from "../../lib/data/watchlist";
 import { WatchStar } from "../../components/watch-star";
-import { Panel, fmtNum } from "../../components/ui";
+import { Panel, HelpNote, fmtNum } from "../../components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +27,20 @@ export default async function WatchlistPage() {
           <Link href="/report" className="underline">print report</Link>
         </span>
       </h1>
+
+      <div className="border border-zinc-800 rounded bg-zinc-950">
+        <HelpNote>
+          Each watched name gets a plain-English verdict from its <b>leading</b> indicators — the same logic
+          as the index gauge, applied per stock. <b>Overbought — profit-booking risk</b> (red): stretch
+          evidence dominates (weekly RSI &gt; 70, price pinned to the upper Bollinger band near 52-week
+          highs, bearish divergence, or its index gauge firing) — even a genuinely strong stock earns this
+          when extended; it means &quot;late to add, consider trimming into strength&quot;, not
+          &quot;short it&quot;. <b>Oversold — rebound setup</b> (green): the mirror image.{" "}
+          <b>Constructive</b>: uptrend intact, no reversal evidence — the boring good one.{" "}
+          <b>Weak</b>: downtrend + poor relative strength — avoid or trim. <b>Mixed</b>: no edge. The
+          evidence bullets show exactly why, including earnings dates (expect volatility) and regime gates.
+        </HelpNote>
+      </div>
 
       {entries.length === 0 && (
         <p className="text-sm text-zinc-400 border border-zinc-800 rounded p-6 text-center">

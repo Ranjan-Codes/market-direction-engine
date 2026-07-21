@@ -42,12 +42,39 @@ export default async function StockPage({ params }: { params: Promise<{ symbol: 
         ))}
       </div>
 
-      <Panel title="Weekly chart (adjusted) — Bollinger 20/2σ, 30w & 40w MAs, volume, RSI, MACD" asOf={bars.at(-1)?.time}>
+      <Panel
+        title="Weekly chart (adjusted) — Bollinger 20/2σ, 30w & 40w MAs, volume, RSI, MACD"
+        asOf={bars.at(-1)?.time}
+        help={
+          <>
+            Weekly candles with the institutional overlays: <b>yellow = 30-week MA, orange = 40-week MA</b>
+            (the weekly equivalents of the 150/200-day) — price above rising MAs is an uptrend; the MAs
+            crossing is the golden/death cross. <b>Purple bands</b>: Bollinger 20-week/2σ — price hugging
+            the upper band (&quot;band-walk&quot;) is strength, but combined with RSI &gt; 70 it&apos;s
+            stretch; narrow bands (squeeze) precede big moves in either direction. <b>Middle pane RSI</b>:
+            above 70 overbought, below 30 oversold — the divergences (price high without an RSI high)
+            matter more than the level. <b>Bottom pane MACD</b>: histogram flipping sign = momentum turning;
+            line crossing signal confirms. Volume bars at the base of the price pane: rising volume in the
+            move&apos;s direction confirms it.
+          </>
+        }
+      >
         <StockChart bars={bars} snapshots={snapshots} />
       </Panel>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Panel title="Signal decomposition" asOf={signal?.as_of_date}>
+        <Panel
+          title="Signal decomposition"
+          asOf={signal?.as_of_date}
+          help={
+            <>
+              Exactly how this stock&apos;s signal was built: each factor in [-1, +1], bar shows direction
+              and size; the composite is their weighted blend (weights in Settings). A big positive trendMa
+              with negative divergence is the classic &quot;strong but tiring&quot; read. If a gate line
+              appears, the setup is valid but the market regime blocks acting on it.
+            </>
+          }
+        >
           {factors ? (
             <table className="w-full text-xs">
               <tbody>

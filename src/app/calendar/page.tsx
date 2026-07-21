@@ -1,5 +1,5 @@
 import { getEvents } from "../../lib/data/queries";
-import { Panel } from "../../components/ui";
+import { Panel, HelpNote } from "../../components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +22,17 @@ export default async function CalendarPage() {
           next 30 days · rows inside the 5-day signal-blackout window are highlighted
         </span>
       </h1>
+      <div className="border border-zinc-800 rounded bg-zinc-950">
+        <HelpNote>
+          The catalyst schedule — when the market gets new information that can trigger the moves the gauge
+          warns about. <b>High importance</b> (red): CPI, jobs reports, central-bank decisions, mega-cap
+          earnings — these move indices. <b>Consensus vs previous</b>: the surprise (actual vs consensus)
+          moves prices, not the number itself; a &quot;good&quot; print below consensus often sells off.
+          Amber-tinted rows sit inside the <b>5-day blackout window</b>: the engine suppresses fresh signal
+          entries ahead of them, because pre-event positioning is a coin flip. Earnings rows (blue) come
+          from each index&apos;s top-25 by market cap.
+        </HelpNote>
+      </div>
       {[...byDay.entries()].map(([day, list]) => (
         <Panel key={day} title={new Date(day).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" })}>
           <table className="w-full text-xs">

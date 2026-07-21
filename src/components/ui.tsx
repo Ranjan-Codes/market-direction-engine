@@ -81,11 +81,14 @@ export function Panel({
   title,
   asOf,
   tag,
+  help,
   children,
 }: {
   title: string;
   asOf?: string | Date | null;
   tag?: "leading" | "coincident" | "lagging";
+  /** Collapsible "how to read this" note shown under the panel header. */
+  help?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const asOfText =
@@ -98,8 +101,22 @@ export function Panel({
         </h2>
         {asOfText && <span className="text-[10px] text-zinc-500">as of {asOfText}</span>}
       </header>
+      {help && <HelpNote>{help}</HelpNote>}
       <div className="p-3">{children}</div>
     </section>
+  );
+}
+
+/** Collapsible explanation block — dense by default, expands on click. */
+export function HelpNote({ children }: { children: React.ReactNode }) {
+  return (
+    <details className="border-b border-zinc-900 px-3 py-1 group">
+      <summary className="text-[11px] text-zinc-500 cursor-pointer select-none hover:text-zinc-300 list-none">
+        <span className="group-open:hidden">ⓘ how to read this</span>
+        <span className="hidden group-open:inline">ⓘ hide</span>
+      </summary>
+      <div className="text-[11px] text-zinc-400 leading-relaxed py-1.5 max-w-3xl">{children}</div>
+    </details>
   );
 }
 

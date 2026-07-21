@@ -1,5 +1,5 @@
 import { getNarrative } from "../../lib/data/queries";
-import { Panel, Sparkline, fmtNum } from "../../components/ui";
+import { Panel, Sparkline, HelpNote, fmtNum } from "../../components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +16,21 @@ export default async function NarrativePage() {
           regime composite pending backtest evidence
         </span>
       </h1>
+
+      <div className="border border-zinc-800 rounded bg-zinc-950">
+        <HelpNote>
+          Headlines from major outlets and central banks are scored by FinBERT (a finance-tuned language
+          model) from −1 (bearish tone) to +1 (bullish). <b>Market tone</b>: the daily average per market —
+          the level matters less than the <i>trend</i> and the <i>extremes</i>; persistently euphoric tone
+          near market highs is a contrarian warning, despair near lows precedes rebounds. <b>Theme tone</b>:
+          the same scores bucketed by macro theme — watch how tone on an upcoming release&apos;s theme (e.g.
+          inflation before CPI) drifts: that&apos;s the market pre-positioning. <b>Retail gauge</b>:
+          StockTwits message sentiment; readings near +1 mean one-sided retail bullishness — contrarian, not
+          confirmation. Caveat honestly displayed: headline-level scoring sometimes misreads good news about
+          bad things (&quot;deficit decreased&quot; scores negative), which is one reason this whole layer is
+          capped at 15% of the regime composite.
+        </HelpNote>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {["US", "UK"].map((mkt) => {
