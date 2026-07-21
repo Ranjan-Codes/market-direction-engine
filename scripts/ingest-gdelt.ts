@@ -20,13 +20,24 @@ async function main(): Promise<void> {
   await withIngestionRun("ingest-gdelt", "gdelt", async () => {
     const pool = getPool();
     let written = 0;
+    let failed = 0;
     for (const q of GDELT_QUERIES) {
       const url =
         "https://api.gdeltproject.org/api/v2/doc/doc?query=" +
         encodeURIComponent(q.query) +
         "&mode=timelinetone&timespan=2w&format=json";
-      const res = await fetchWithRetry(url, { retries: 2, backoffMs: 7_000 });
-      const body = (await res.json()) as GdeltTimeline;
+      // GDELT rate-limits per IP and GitHub runner IPs are shared/contended —
+      // pace generously and treat per-query 429s as gaps, not failures.
+      let body: GdeltTimeline = {};
+      try {
+        const res = await fetchWithRetry(url, { retries: 3, backoffMs: 30_000 });
+        body = (await res.json()) as GdeltTimeline;
+      } catch (err) {
+        failed++;
+        console.warn(`  ${q.scopeKey}: FAILED (${err instanceof Error ? err.message.slice(0, 60) : err})`);
+        await sleep(20_000);
+        continue;
+      }
       const points = body.timeline?.[0]?.data ?? [];
 
       // Refresh the window: delete + insert per scope.
@@ -55,9 +66,12 @@ async function main(): Promise<void> {
         }
       }
       console.log(`  ${q.scopeKey}: ${days.length} tone points`);
-      await sleep(6_500);
+      await sleep(20_000);
     }
-    return { rowsWritten: written };
+    if (failed === GDELT_QUERIES.length) {
+      throw new Error("all GDELT queries failed — likely IP-wide rate limiting");
+    }
+    return { rowsWritten: written, detail: { failedQueries: failed } };
   });
 }
 

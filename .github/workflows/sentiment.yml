@@ -34,6 +34,7 @@ jobs:
         run: npx tsx scripts/ingest-headlines.ts
 
       - name: GDELT news tone
+        continue-on-error: true # per-IP rate limits on shared runners; gaps ≠ failure
         run: npx tsx scripts/ingest-gdelt.ts
 
       - name: Social (StockTwits + Reddit)
