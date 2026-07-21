@@ -66,5 +66,8 @@ async function main(): Promise<void> {
 }
 
 main()
-  .catch(() => process.exitCode = 1)
+  .catch((err) => {
+    console.error(err instanceof Error ? err.stack ?? err.message : err);
+    process.exitCode = 1;
+  })
   .finally(() => closePool());
