@@ -12,15 +12,12 @@ export const metadata: Metadata = {
 };
 
 const NAV = [
-  ["/", "Regime"],
+  ["/", "Today"],
   ["/watchlist", "Watchlist"],
-  ["/screener", "Screener"],
+  ["/screener", "Stocks"],
   ["/calendar", "Calendar"],
-  ["/narrative", "Narrative"],
-  ["/backtest", "Backtest"],
-  ["/report", "Report"],
   ["/guide", "Guide"],
-  ["/settings", "Settings"],
+  ["/more", "More"],
 ] as const;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

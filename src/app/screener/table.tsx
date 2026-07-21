@@ -26,6 +26,7 @@ export function ScreenerTable({
   const [direction, setDirection] = useState("all");
   const [status, setStatus] = useState("all");
   const [minConviction, setMinConviction] = useState(0);
+  const [showFactors, setShowFactors] = useState(false);
 
   const filtered = useMemo(
     () =>
@@ -68,6 +69,14 @@ export function ScreenerTable({
             className={`${sel} w-16`}
           />
         </label>
+        <label className="text-zinc-400 flex items-center gap-1 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showFactors}
+            onChange={(e) => setShowFactors(e.target.checked)}
+          />
+          factor detail
+        </label>
         <span className="text-zinc-500 ml-auto">{filtered.length} rows</span>
       </div>
 
@@ -81,7 +90,7 @@ export function ScreenerTable({
               <th>Sector</th>
               <th>Signal</th>
               <th>Conv</th>
-              {FACTORS.map((f) => <th key={f} className="px-1">{f}</th>)}
+              {showFactors && FACTORS.map((f) => <th key={f} className="px-1">{f}</th>)}
               <th>Status</th>
             </tr>
           </thead>
@@ -108,7 +117,7 @@ export function ScreenerTable({
                   {s.direction}
                 </td>
                 <td className="font-bold">{Math.round(s.conviction)}</td>
-                {FACTORS.map((f) => (
+                {showFactors && FACTORS.map((f) => (
                   <td key={f} className={`px-1 ${cellColor(s.factors?.[f])}`}>
                     {s.factors?.[f] == null ? "–" : s.factors[f]!.toFixed(2)}
                   </td>
