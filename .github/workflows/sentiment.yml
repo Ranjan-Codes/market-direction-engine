@@ -1,0 +1,60 @@
+name: Sentiment
+
+on:
+  schedule:
+    # 2× daily within free-tier limits: pre-US-open and post-US-close (UTC).
+    - cron: "0 11 * * 1-5"
+    - cron: "45 21 * * 1-5"
+  workflow_dispatch:
+
+concurrency:
+  group: sentiment
+  cancel-in-progress: false
+
+env:
+  SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+  REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+  REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+  REDDIT_USER_AGENT: "market-direction-engine/0.1 (personal research tool)"
+
+jobs:
+  sentiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: RSS headlines
+        run: npx tsx scripts/ingest-headlines.ts
+
+      - name: GDELT news tone
+        run: npx tsx scripts/ingest-gdelt.ts
+
+      - name: Social (StockTwits + Reddit)
+        continue-on-error: true # froth gauge is best-effort; sources may block
+        run: npx tsx scripts/ingest-social.ts
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install FinBERT dependencies
+        run: pip install --quiet "transformers[torch]" psycopg[binary]
+
+      - name: Cache FinBERT model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: finbert-ProsusAI
+
+      - name: Score headlines (FinBERT)
+        run: python scripts/score_headlines.py
+
+      - name: Aggregate sentiment series
+        run: npx tsx scripts/aggregate-sentiment.ts
