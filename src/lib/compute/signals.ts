@@ -20,13 +20,9 @@ import { SIGNAL_WEIGHTS, WEIGHTS_VERSION } from "../../config/weights";
 
 const clip = (v: number, lo = -1, hi = 1) => Math.min(hi, Math.max(lo, v));
 
-interface SnapRow {
-  instrument_id: number;
-  symbol: string;
-  country: string;
-  index_id: number | null;
-  index_symbol: string | null;
-  week_end: string;
+/** Minimal indicator inputs the factor model needs — the backtester feeds
+ *  historical rows through the exact same function as live signals. */
+export interface FactorInputs {
   rsi_14: number | null;
   rsi_divergence: string | null;
   macd_hist: number | null;
@@ -49,6 +45,15 @@ interface SnapRow {
   close: number | null;
 }
 
+interface SnapRow extends FactorInputs {
+  instrument_id: number;
+  symbol: string;
+  country: string;
+  index_id: number | null;
+  index_symbol: string | null;
+  week_end: string;
+}
+
 export interface FactorBreakdown {
   trendMa: number | null;
   momentum: number | null;
@@ -59,7 +64,7 @@ export interface FactorBreakdown {
   range: number | null;
 }
 
-export function computeFactors(s: SnapRow): FactorBreakdown {
+export function computeFactors(s: FactorInputs): FactorBreakdown {
   const trendParts = [
     s.price_vs_ma_30w != null ? clip(s.price_vs_ma_30w * 6) : null,
     s.price_vs_ma_40w != null ? clip(s.price_vs_ma_40w * 6) : null,
