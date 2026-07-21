@@ -71,14 +71,43 @@ async function main(): Promise<void> {
       }
     }
 
-    // 3. Impossible prices
+    // 3a. Impossible high < low — repair deterministically (clamp to the
+    // bar's own min/max) and log every repair; never silent (WTI's real
+    // negative April-2020 close taught us futures prices CAN be negative,
+    // but high < low is impossible in any market).
+    const { rows: repaired } = await pool.query(`
+      update ohlcv_daily set
+        high = greatest(open, high, low, close),
+        low  = least(open, high, low, close),
+        adj_high = greatest(adj_open, adj_high, adj_low, adj_close),
+        adj_low  = least(adj_open, adj_high, adj_low, adj_close)
+      where high is not null and low is not null and high < low
+      returning instrument_id, trade_date::text`);
+    const { rows: repairedW } = await pool.query(`
+      update ohlcv_weekly set
+        high = greatest(open, high, low, close),
+        low  = least(open, high, low, close),
+        adj_high = greatest(adj_open, adj_high, adj_low, adj_close),
+        adj_low  = least(adj_open, adj_high, adj_low, adj_close)
+      where high is not null and low is not null and high < low
+      returning instrument_id, week_end::text`);
+    if (repaired.length + repairedW.length > 0) {
+      problems.push({
+        severity: "warn", check: "prices",
+        detail: `repaired ${repaired.length} daily + ${repairedW.length} weekly impossible high<low bars (clamped to bar min/max): ${JSON.stringify([...repaired, ...repairedW])}`,
+      });
+    }
+
+    // 3b. Non-positive closes are an error for cash instruments only —
+    // futures can legitimately settle negative (WTI 2020-04-20).
     const { rows: badPrices } = await pool.query(`
-      select count(*) as n from ohlcv_daily
-       where close <= 0 or (high is not null and low is not null and high < low)`);
+      select count(*) as n from ohlcv_daily d
+        join instruments i on i.id = d.instrument_id
+       where d.close <= 0 and i.instrument_type in ('equity','etf','index')`);
     if (Number(badPrices[0].n) > 0) {
       problems.push({
         severity: "error", check: "prices",
-        detail: `${badPrices[0].n} daily bars with non-positive close or high < low`,
+        detail: `${badPrices[0].n} equity/etf/index daily bars with non-positive close`,
       });
     }
 
