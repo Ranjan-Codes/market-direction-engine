@@ -16,7 +16,7 @@ export default function SettingsPage() {
   ];
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-bold">
+      <h1 className="text-xl font-bold tracking-tight">
         Settings <span className="text-xs font-normal text-zinc-500">read-only view — single-user; changes are code/config commits so every value is versioned</span>
       </h1>
       {blocks.map(([title, value]) => (

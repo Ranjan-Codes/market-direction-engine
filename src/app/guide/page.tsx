@@ -6,7 +6,7 @@ import { Panel } from "../../components/ui";
 export default function GuidePage() {
   return (
     <div className="space-y-4 max-w-4xl">
-      <h1 className="text-lg font-bold">
+      <h1 className="text-xl font-bold tracking-tight">
         How to read this app{" "}
         <span className="text-xs font-normal text-zinc-500">
           the methodology in plain English — every panel also has its own ⓘ note

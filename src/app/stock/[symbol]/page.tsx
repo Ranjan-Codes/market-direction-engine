@@ -33,7 +33,7 @@ export default async function StockPage({
     <div className="space-y-4">
       <div className="flex items-baseline gap-3 flex-wrap">
         <WatchStar symbol={instrument.symbol} inList={watchSymbols.has(instrument.symbol)} />
-        <h1 className="text-lg font-bold">{instrument.symbol}</h1>
+        <h1 className="text-xl font-bold tracking-tight">{instrument.symbol}</h1>
         <span className="text-sm text-zinc-600">{instrument.name}</span>
         <span className="text-xs text-zinc-500">{instrument.metadata?.sector ?? ""} · {instrument.currency}</span>
         {signal && (
@@ -61,7 +61,7 @@ export default async function StockPage({
             className={`px-3 py-1 rounded-full border ${
               t === timeframe
                 ? "bg-zinc-800 text-white border-zinc-800"
-                : "bg-white text-zinc-600 border-zinc-300 hover:bg-zinc-100"
+                : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-100"
             }`}
           >
             {t[0].toUpperCase() + t.slice(1)}

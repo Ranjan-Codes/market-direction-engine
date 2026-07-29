@@ -15,14 +15,14 @@ export default async function CalendarPage() {
   const blackoutEndIso = blackoutEnd.toISOString().slice(0, 10);
 
   return (
-    <div className="space-y-3">
-      <h1 className="text-lg font-bold">
+    <div className="space-y-4">
+      <h1 className="text-xl font-bold tracking-tight">
         Economic & earnings calendar{" "}
         <span className="text-xs font-normal text-zinc-500">
           next 30 days · rows inside the 5-day signal-blackout window are highlighted
         </span>
       </h1>
-      <div className="border border-zinc-300 rounded bg-white">
+      <div className="border border-zinc-200 rounded-xl bg-white shadow-sm">
         <HelpNote>
           The catalyst schedule — when the market gets new information that can trigger the moves the gauge
           warns about. <b>High importance</b> (red): CPI, jobs reports, central-bank decisions, mega-cap

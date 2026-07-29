@@ -19,14 +19,14 @@ export default async function BacktestPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-bold">
+      <h1 className="text-xl font-bold tracking-tight">
         Backtest / validation{" "}
         <span className="text-xs font-normal text-zinc-500">
           run #{run.id} · weights {run.weights_version} · {run.period_start} → {run.period_end}
         </span>
       </h1>
 
-      <div className="border border-zinc-300 rounded bg-white">
+      <div className="border border-zinc-200 rounded-xl bg-white shadow-sm">
         <HelpNote>
           The honesty page: the live signal code replayed over history with strict point-in-time data.
           Column meanings — <b>n</b>: signal-weeks in the segment. <b>Hit</b>: % that moved the signalled

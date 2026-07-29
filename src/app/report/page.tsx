@@ -25,7 +25,7 @@ export default async function ReportPage() {
       </div>
 
       <section>
-        <h2 className="font-semibold border-b border-zinc-300 pb-1 mb-2">Regime & reversal gauges</h2>
+        <h2 className="font-semibold border-b border-zinc-200 pb-1 mb-2">Regime & reversal gauges</h2>
         <table className="w-full text-sm">
           <thead className="text-left text-zinc-500 text-xs">
             <tr><th className="py-1">Index</th><th>Regime</th><th>Composite</th><th>Gauge</th><th>Evidence</th></tr>
@@ -52,7 +52,7 @@ export default async function ReportPage() {
       </section>
 
       <section>
-        <h2 className="font-semibold border-b border-zinc-300 pb-1 mb-2">Upcoming catalysts (30 days)</h2>
+        <h2 className="font-semibold border-b border-zinc-200 pb-1 mb-2">Upcoming catalysts (30 days)</h2>
         <table className="w-full text-xs">
           <tbody>
             {regimes.map((r) => (
@@ -71,7 +71,7 @@ export default async function ReportPage() {
       </section>
 
       <section>
-        <h2 className="font-semibold border-b border-zinc-300 pb-1 mb-2">
+        <h2 className="font-semibold border-b border-zinc-200 pb-1 mb-2">
           Watchlist ({watchlist.length})
         </h2>
         {watchlist.length === 0 ? (

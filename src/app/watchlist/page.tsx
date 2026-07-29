@@ -19,7 +19,7 @@ export default async function WatchlistPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-bold">
+      <h1 className="text-xl font-bold tracking-tight">
         Watchlist{" "}
         <span className="text-xs font-normal text-zinc-500">
           {entries.length} names · leading-indicator verdicts at the 2–6 week horizon · add <b>any listed
@@ -32,7 +32,7 @@ export default async function WatchlistPage() {
 
       <AddStock inList={entries.map((e) => e.symbol)} />
 
-      <div className="border border-zinc-300 rounded bg-white">
+      <div className="border border-zinc-200 rounded-xl bg-white shadow-sm">
         <HelpNote>
           Each watched name gets a plain-English verdict from its <b>leading</b> indicators — the same logic
           as the index gauge, applied per stock. <b>Overbought — profit-booking risk</b> (red): stretch
@@ -47,7 +47,7 @@ export default async function WatchlistPage() {
       </div>
 
       {entries.length === 0 && (
-        <p className="text-sm text-zinc-600 border border-zinc-300 rounded p-6 text-center">
+        <p className="text-sm text-zinc-600 border border-zinc-200 rounded-xl p-6 text-center shadow-sm">
           Empty. Star names in the <Link href="/screener" className="underline">screener</Link> to track how
           the leading indicators read them.
         </p>

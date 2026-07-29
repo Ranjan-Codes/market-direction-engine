@@ -43,10 +43,10 @@ export function ScreenerTable({
     [signals, index, direction, status, minConviction],
   );
 
-  const sel = "bg-zinc-50 border border-zinc-400 rounded px-2 py-1 text-xs";
+  const sel = "bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs shadow-sm focus:ring-1 focus:ring-zinc-300 focus:outline-none";
   return (
     <div>
-      <div className="flex gap-2 mb-2 items-center text-xs">
+      <div className="flex gap-2.5 mb-3 items-center text-xs flex-wrap">
         <select className={sel} value={index} onChange={(e) => setIndex(e.target.value)}>
           <option value="all">All indices</option>
           <option>SPX</option><option>NDX</option><option>UKX</option>
@@ -80,57 +80,59 @@ export function ScreenerTable({
         <span className="text-zinc-500 ml-auto">{filtered.length} rows</span>
       </div>
 
-      <div className="overflow-x-auto border border-zinc-300 rounded">
+      <div className="overflow-x-auto border border-zinc-200 rounded-xl shadow-sm bg-white">
         <table className="w-full text-xs whitespace-nowrap">
-          <thead className="text-zinc-500 text-left bg-zinc-50 sticky top-0">
+          <thead className="text-zinc-500 text-left bg-zinc-50/80 sticky top-0">
             <tr>
-              <th className="px-1 py-1.5 w-6"></th>
-              <th className="px-2 py-1.5">Symbol</th>
-              <th>Index</th>
-              <th>Sector</th>
-              <th>Signal</th>
-              <th>Conv</th>
-              {showFactors && FACTORS.map((f) => <th key={f} className="px-1">{f}</th>)}
-              <th>Status</th>
+              <th className="px-1.5 py-2 w-6"></th>
+              <th className="px-2 py-2">Symbol</th>
+              <th className="px-2 py-2">Company</th>
+              <th className="px-2 py-2">Index</th>
+              <th className="px-2 py-2">Sector</th>
+              <th className="px-2 py-2">Signal</th>
+              <th className="px-2 py-2">Conv</th>
+              {showFactors && FACTORS.map((f) => <th key={f} className="px-1.5 py-2">{f}</th>)}
+              <th className="px-2 py-2">Status</th>
             </tr>
           </thead>
           <tbody>
             {filtered.slice(0, 400).map((s) => (
-              <tr key={s.symbol} className="border-t border-zinc-200 hover:bg-zinc-50">
-                <td className="px-1 py-1">
+              <tr key={s.symbol} className="border-t border-zinc-100 hover:bg-zinc-50/60 transition-colors">
+                <td className="px-1.5 py-1.5">
                   <WatchStar symbol={s.symbol} inList={watched.has(s.symbol)} />
                 </td>
-                <td className="px-2 py-1 font-semibold">
+                <td className="px-2 py-1.5 font-semibold">
                   <Link href={`/stock/${encodeURIComponent(s.symbol)}`} className="hover:underline">
                     {s.symbol}
                   </Link>
                 </td>
-                <td className="text-zinc-600">{s.index_symbol}</td>
-                <td className="text-zinc-500 max-w-[140px] truncate">{s.sector}</td>
+                <td className="px-2 py-1.5 text-zinc-500 max-w-[180px] truncate">{s.name ?? "–"}</td>
+                <td className="px-2 text-zinc-600">{s.index_symbol}</td>
+                <td className="px-2 text-zinc-500 max-w-[140px] truncate">{s.sector}</td>
                 <td
-                  className={
-                    s.direction === "bullish" ? "text-green-700 font-semibold"
+                  className={`px-2 ${
+                    s.direction === "bullish" ? "text-emerald-700 font-semibold"
                     : s.direction === "bearish" ? "text-red-700 font-semibold"
-                    : "text-zinc-600"
-                  }
+                    : "text-zinc-500"
+                  }`}
                 >
                   {s.direction}
                 </td>
-                <td className="font-bold">{Math.round(s.conviction)}</td>
+                <td className="px-2 font-bold">{Math.round(s.conviction)}</td>
                 {showFactors && FACTORS.map((f) => (
-                  <td key={f} className={`px-1 ${cellColor(s.factors?.[f])}`}>
+                  <td key={f} className={`px-1.5 ${cellColor(s.factors?.[f])}`}>
                     {s.factors?.[f] == null ? "–" : s.factors[f]!.toFixed(2)}
                   </td>
                 ))}
-                <td>
-                  {s.gated && <span className="text-amber-600" title={s.gate_reason ?? ""}>GATED</span>}
+                <td className="px-2">
+                  {s.gated && <span className="text-amber-600 font-medium" title={s.gate_reason ?? ""}>GATED</span>}
                   {s.event_blackout && (
-                    <span className="text-sky-600 ml-1" title={s.upcoming_events.map((e) => e.event_name).join(", ")}>
+                    <span className="text-sky-600 font-medium ml-1" title={s.upcoming_events.map((e) => e.event_name).join(", ")}>
                       BLACKOUT
                     </span>
                   )}
                   {!s.gated && !s.event_blackout && s.direction !== "neutral" && (
-                    <span className="text-green-600">✓</span>
+                    <span className="text-emerald-600 font-medium">✓</span>
                   )}
                 </td>
               </tr>

@@ -8,15 +8,15 @@ export const dynamic = "force-dynamic";
 export default async function ScreenerPage() {
   const [signals, watchSymbols] = await Promise.all([getSignals(), getWatchlistSymbols()]);
   return (
-    <div className="space-y-3">
-      <h1 className="text-lg font-bold">
+    <div className="space-y-4">
+      <h1 className="text-xl font-bold tracking-tight">
         Signal screener{" "}
         <span className="text-xs font-normal text-zinc-500">
           week ending {signals[0]?.as_of_date} · {signals.length} constituents · 2–6 week horizon ·{" "}
           <a href="/api/export/signals" className="underline">export CSV</a>
         </span>
       </h1>
-      <div className="border border-zinc-300 rounded bg-white">
+      <div className="border border-zinc-200 rounded-xl bg-white shadow-sm">
         <HelpNote>
           Every index constituent gets a weekly signal from seven weighted factors, each scored in [-1, +1]:
           <b> trendMa</b> (price vs 30/40-week averages and fresh golden/death crosses), <b>momentum</b>

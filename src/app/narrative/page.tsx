@@ -9,7 +9,7 @@ export default async function NarrativePage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-bold">
+      <h1 className="text-xl font-bold tracking-tight">
         Narrative & sentiment{" "}
         <span className="text-xs font-normal text-zinc-500">
           FinBERT-scored headlines · GDELT tone · retail gauges — the noisiest layer, capped at 15% of the
@@ -17,7 +17,7 @@ export default async function NarrativePage() {
         </span>
       </h1>
 
-      <div className="border border-zinc-300 rounded bg-white">
+      <div className="border border-zinc-200 rounded-xl bg-white shadow-sm">
         <HelpNote>
           Headlines from major outlets and central banks are scored by FinBERT (a finance-tuned language
           model) from −1 (bearish tone) to +1 (bullish). <b>Market tone</b>: the daily average per market —

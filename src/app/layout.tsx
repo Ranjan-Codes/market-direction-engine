@@ -24,20 +24,20 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-zinc-100 text-zinc-900 font-sans">
-        <nav className="flex items-center gap-1 px-4 py-2 border-b border-zinc-300 bg-white sticky top-0 z-10 shadow-sm">
-          <span className="font-bold text-sm mr-4 text-zinc-900">Market Direction Engine</span>
+        <nav className="flex items-center gap-1 px-4 py-2.5 border-b border-zinc-200 bg-white sticky top-0 z-10 shadow-sm">
+          <span className="font-bold text-sm mr-4 tracking-tight text-zinc-900">Market Direction Engine</span>
           {NAV.map(([href, label]) => (
             <Link
               key={href}
               href={href}
-              className="px-2.5 py-1 rounded text-sm text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+              className="px-3 py-1 rounded-lg text-sm text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
             >
               {label}
             </Link>
           ))}
         </nav>
         <main className="flex-1 p-4 max-w-[1500px] w-full mx-auto">{children}</main>
-        <footer className="px-4 py-2 border-t border-zinc-300 text-[11px] text-zinc-500 bg-white">
+        <footer className="px-4 py-2.5 border-t border-zinc-200 text-[11px] text-zinc-500 bg-white">
           Analytical decision-support only — not investment advice, no order execution. All outputs are
           probabilistic and may be wrong; verify independently before acting. Data from free public
           sources; may be delayed or incomplete.

@@ -10,13 +10,13 @@ export default function MorePage() {
     ["/settings", "Settings", "Weights, parameters, data sources, schedules (read-only)"],
   ];
   return (
-    <div className="max-w-2xl mx-auto py-6 space-y-3">
-      <h1 className="text-lg font-bold mb-4">More</h1>
+    <div className="max-w-2xl mx-auto py-6 space-y-4">
+      <h1 className="text-xl font-bold tracking-tight mb-4">More</h1>
       {items.map(([href, title, desc]) => (
         <Link
           key={href}
           href={href}
-          className="block border border-zinc-300 rounded-xl p-4 bg-white hover:bg-zinc-50"
+          className="block border border-zinc-200 rounded-xl p-4 bg-white shadow-sm hover:bg-zinc-50 hover:shadow transition-all"
         >
           <p className="font-semibold text-zinc-900">{title}</p>
           <p className="text-sm text-zinc-500">{desc}</p>

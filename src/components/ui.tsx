@@ -94,15 +94,15 @@ export function Panel({
   const asOfText =
     asOf instanceof Date ? asOf.toISOString().slice(0, 10) : asOf ? String(asOf).slice(0, 10) : null;
   return (
-    <section className="border border-zinc-300 rounded bg-white">
-      <header className="flex items-center justify-between px-3 py-1.5 border-b border-zinc-300">
+    <section className="border border-zinc-200 rounded-xl bg-white shadow-sm">
+      <header className="flex items-center justify-between px-4 py-2 border-b border-zinc-100">
         <h2 className="text-sm font-semibold text-zinc-800 flex items-center gap-2">
           {title} {tag && <Tag kind={tag} />}
         </h2>
         {asOfText && <span className="text-[10px] text-zinc-500">as of {asOfText}</span>}
       </header>
       {help && <HelpNote>{help}</HelpNote>}
-      <div className="p-3">{children}</div>
+      <div className="p-4">{children}</div>
     </section>
   );
 }
@@ -110,7 +110,7 @@ export function Panel({
 /** Collapsible explanation block — dense by default, expands on click. */
 export function HelpNote({ children }: { children: React.ReactNode }) {
   return (
-    <details className="border-b border-zinc-200 px-3 py-1 group">
+    <details className="border-b border-zinc-100 px-4 py-1.5 group">
       <summary className="text-[11px] text-zinc-500 cursor-pointer select-none hover:text-zinc-700 list-none">
         <span className="group-open:hidden">ⓘ how to read this</span>
         <span className="hidden group-open:inline">ⓘ hide</span>
