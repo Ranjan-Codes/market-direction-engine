@@ -263,6 +263,86 @@ export async function getNarrative() {
   return { tone: tone.rows, themes: themes.rows, headlines: headlines.rows, froth: froth.rows };
 }
 
+export interface IndexTechnicals {
+  symbol: string;
+  week_end: string;
+  rsi_14: number | null;
+  rsi_divergence: string | null;
+  macd: number | null;
+  macd_signal: number | null;
+  macd_hist: number | null;
+  bb_pct_b: number | null;
+  bb_bandwidth: number | null;
+  bb_squeeze: boolean | null;
+  bb_band_walk: string | null;
+  volume_vs_20w: number | null;
+  volume_confirms: boolean | null;
+  price_vs_ma_30w: number | null;
+  price_vs_ma_40w: number | null;
+  ma_30w_slope: number | null;
+  ma_40w_slope: number | null;
+  ma_cross: string | null;
+  adx_14: number | null;
+  di_plus: number | null;
+  di_minus: number | null;
+  pos_52w_range: number | null;
+  close: number | null;
+}
+
+export async function getIndexTechnicals(): Promise<Map<string, IndexTechnicals>> {
+  const { rows } = await getPool().query(`
+    select i.symbol, t.week_end::text,
+           t.rsi_14::float8, t.rsi_divergence,
+           t.macd::float8, t.macd_signal::float8, t.macd_hist::float8,
+           t.bb_pct_b::float8, t.bb_bandwidth::float8, t.bb_squeeze, t.bb_band_walk,
+           t.volume_vs_20w::float8, t.volume_confirms,
+           t.price_vs_ma_30w::float8, t.price_vs_ma_40w::float8,
+           t.ma_30w_slope::float8, t.ma_40w_slope::float8, t.ma_cross,
+           t.adx_14::float8, t.di_plus::float8, t.di_minus::float8,
+           t.pos_52w_range::float8,
+           w.adj_close::float8 as close
+      from technical_snapshots t
+      join instruments i on i.id = t.instrument_id
+      left join ohlcv_weekly w on w.instrument_id = t.instrument_id and w.week_end = t.week_end
+     where i.instrument_type = 'index'
+       and (t.instrument_id, t.week_end) in (
+         select instrument_id, max(week_end) from technical_snapshots
+          where instrument_id in (select id from instruments where instrument_type = 'index')
+          group by instrument_id)
+     order by i.symbol`);
+  const map = new Map<string, IndexTechnicals>();
+  for (const r of rows) map.set(r.symbol, r);
+  return map;
+}
+
+export interface ConstituentBreadth {
+  index_symbol: string;
+  total: number;
+  pct_overbought: number;
+  pct_oversold: number;
+}
+
+export async function getConstituentBreadth(): Promise<Map<string, ConstituentBreadth>> {
+  const { rows } = await getPool().query(`
+    with latest_rsi as (
+      select distinct on (instrument_id) instrument_id, rsi_14
+        from technical_snapshots order by instrument_id, week_end desc
+    )
+    select i.symbol as index_symbol,
+           count(*)::int as total,
+           (100.0 * count(*) filter (where lr.rsi_14 > 70) / nullif(count(*), 0))::float8 as pct_overbought,
+           (100.0 * count(*) filter (where lr.rsi_14 < 30) / nullif(count(*), 0))::float8 as pct_oversold
+      from index_membership m
+      join instruments i on i.id = m.index_id
+      join latest_rsi lr on lr.instrument_id = m.constituent_id
+     where m.valid_to is null
+     group by m.index_id, i.symbol
+     order by i.symbol`);
+  const map = new Map<string, ConstituentBreadth>();
+  for (const r of rows) map.set(r.index_symbol, r);
+  return map;
+}
+
 /** Freshness summary for the staleness banner. */
 export async function getDataHealth() {
   const { rows } = await getPool().query(`
