@@ -108,3 +108,14 @@ export const EARNINGS_CATALYSTS = {
  * intermarket instruments keep full daily history (small row counts).
  */
 export const CONSTITUENT_DAILY_RETENTION_DAYS = 3 * 365;
+
+/**
+ * Retention for raw scored headlines (sentiment_readings where source='rss').
+ * These carry the headline + URL in `detail` (~570 bytes/row, ~250 rows/day —
+ * left unbounded it was the fastest-growing table at ~52 MB/year). The daily
+ * market/theme aggregates built from them are 28 bytes and kept forever, as are
+ * the COT/GDELT/StockTwits series, so pruning old raw items costs no signal —
+ * only the ability to re-read individual old headlines. The /narrative feed
+ * shows the last 7 days.
+ */
+export const SENTIMENT_RAW_RETENTION_DAYS = 90;

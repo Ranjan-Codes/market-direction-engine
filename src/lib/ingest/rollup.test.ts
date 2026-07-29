@@ -36,29 +36,27 @@ describe("rollupWeekly", () => {
   it("aggregates OHLCV correctly over a full week", () => {
     const [w] = rollupWeekly(week);
     expect(w.weekEnd).toBe("2026-07-24");
-    expect(w.weekStart).toBe("2026-07-20");
-    expect(w.open).toBe(100); // first day's open
-    expect(w.high).toBe(112); // max high
-    expect(w.low).toBe(99); // min low
-    expect(w.close).toBe(111); // last day's close
-    expect(w.volume).toBe(5500); // sum
+    expect(w.adjOpen).toBe(100); // first day's open (adjFactor=1)
+    expect(w.adjHigh).toBe(112); // max adjusted high
+    expect(w.adjLow).toBe(99); // min adjusted low
+    expect(w.adjClose).toBe(111); // last day's close
+    expect(w.volume).toBe(5500); // sum of raw volume
   });
 
   it("handles holiday-shortened weeks (week_end stays Friday)", () => {
     // Monday holiday: week starts Tuesday
     const [w] = rollupWeekly(week.slice(1));
     expect(w.weekEnd).toBe("2026-07-24");
-    expect(w.weekStart).toBe("2026-07-21");
-    expect(w.open).toBe(104);
+    expect(w.adjOpen).toBe(104);
   });
 
-  it("applies adjustment factors to adjusted fields only", () => {
+  it("applies adjustment factors to adjusted fields", () => {
     const adjusted = week.map((b) => ({ ...b, adjFactor: 0.5 }));
     const [w] = rollupWeekly(adjusted);
-    expect(w.close).toBe(111); // raw untouched
     expect(w.adjClose).toBeCloseTo(55.5);
     expect(w.adjHigh).toBeCloseTo(56);
-    expect(w.adjVolume).toBe(11000); // volume scales inversely
+    // volume stays raw (vendor split-adjusted)
+    expect(w.volume).toBe(5500);
   });
 
   it("splits multiple weeks and sorts ascending", () => {
@@ -76,7 +74,7 @@ describe("rollupWeekly", () => {
       { ...bar("2026-07-22", 0, 0, 0, 0, 0), high: null, low: null, volume: null },
     ];
     const [w] = rollupWeekly(withNull as AdjustedDailyBar[]);
-    expect(w.high).toBe(112);
-    expect(w.low).toBe(99);
+    expect(w.adjHigh).toBe(112); // adjFactor=1 so same as raw
+    expect(w.adjLow).toBe(99);
   });
 });

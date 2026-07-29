@@ -15,9 +15,12 @@ import { weekStartMonday } from "../utils/weeks";
  *   window must never overwrite a settled weekly bar).
  */
 
-// 2000+ keeps two full bear/bull cycles for weekly-horizon backtests while
-// fitting the Supabase free tier (1990 start put the DB at 89% of the cap).
-export const HISTORY_START = "2000-01-01";
+// History depth is a free-tier tradeoff, not an analytical preference: 1990 put
+// the DB at 89% of the 500 MB cap, 2000 at 99%. 2010 keeps ~16 years — enough
+// for the 260-week indicator warmup plus a decade of backtest range, but it
+// does NOT cover the dot-com bust or the GFC. Raising this and re-running the
+// `backfill` job restores deeper history if the cap ever moves (Supabase Pro).
+export const HISTORY_START = "2010-01-01";
 const INCREMENTAL_OVERLAP_DAYS = 14;
 
 export interface InstrumentRow {
@@ -71,17 +74,18 @@ export async function ingestInstrumentOhlcv(
   const dailyBars = opts.dailyRetainFrom
     ? bars.filter((b) => b.date >= opts.dailyRetainFrom!)
     : bars;
+  // Only adjusted prices are stored — raw OHLC and adj_volume were dropped in
+  // migration 00006 as write-only. `volume` is kept (technicals reads it).
   const daily = await upsertRows(
     "ohlcv_daily",
     [
-      "instrument_id", "trade_date", "open", "high", "low", "close", "volume",
-      "adj_open", "adj_high", "adj_low", "adj_close", "adj_volume", "source", "as_of",
+      "instrument_id", "trade_date", "volume",
+      "adj_open", "adj_high", "adj_low", "adj_close", "source", "as_of",
     ],
     ["instrument_id", "trade_date"],
     dailyBars.map((b) => [
-      instrument.id, b.date, b.open, b.high, b.low, b.close, b.volume,
+      instrument.id, b.date, b.volume,
       adj(b.open, b), adj(b.high, b), adj(b.low, b), adj(b.close, b),
-      b.volume == null ? null : Math.round(b.volume / (b.adjFactor || 1)),
       meta.source, meta.asOf,
     ]),
   );
@@ -96,13 +100,13 @@ export async function ingestInstrumentOhlcv(
   const weekly = await upsertRows(
     "ohlcv_weekly",
     [
-      "instrument_id", "week_end", "week_start", "open", "high", "low", "close", "volume",
-      "adj_open", "adj_high", "adj_low", "adj_close", "adj_volume", "source", "as_of",
+      "instrument_id", "week_end", "volume",
+      "adj_open", "adj_high", "adj_low", "adj_close", "source", "as_of",
     ],
     ["instrument_id", "week_end"],
     weeks.map((w) => [
-      instrument.id, w.weekEnd, w.weekStart, w.open, w.high, w.low, w.close, w.volume,
-      w.adjOpen, w.adjHigh, w.adjLow, w.adjClose, w.adjVolume, meta.source, meta.asOf,
+      instrument.id, w.weekEnd, w.volume,
+      w.adjOpen, w.adjHigh, w.adjLow, w.adjClose, meta.source, meta.asOf,
     ]),
   );
 

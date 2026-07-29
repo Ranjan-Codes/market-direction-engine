@@ -40,6 +40,8 @@ export const INDICATOR_PARAMS = {
     lookbackWeeks: 26,
   },
   /** snapshots stored for this many recent weeks (backtests recompute
-   *  from ohlcv_weekly on the fly — keeps the free tier inside 500 MB) */
-  snapshotRetentionWeeks: 260,
+   *  from ohlcv_weekly on the fly — keeps the free tier inside 500 MB).
+   *  3 years, cut from 5 in the 00006 slim-down; only affects how far the
+   *  UI's stored sparklines reach, and is recomputable at any time. */
+  snapshotRetentionWeeks: 156,
 } as const;
