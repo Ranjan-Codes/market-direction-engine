@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "verify": "npm run lint && npm run typecheck && npm run test",
     "migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
