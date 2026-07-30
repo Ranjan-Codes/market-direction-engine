@@ -107,7 +107,7 @@ export const EARNINGS_CATALYSTS = {
  * Bounded to respect the Supabase free-tier 500 MB cap; indices and
  * intermarket instruments keep full daily history (small row counts).
  */
-export const CONSTITUENT_DAILY_RETENTION_DAYS = 3 * 365;
+export const CONSTITUENT_DAILY_RETENTION_DAYS = 400;
 
 /**
  * Retention for raw scored headlines (sentiment_readings where source='rss').
