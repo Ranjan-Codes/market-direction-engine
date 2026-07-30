@@ -1,15 +1,38 @@
 @import "tailwindcss";
 
-/* Fixed light theme (user preference): light-grey page, white cards.
-   Deliberately no prefers-color-scheme override. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #f4f4f5; /* zinc-100 */
-  --foreground: #18181b; /* zinc-900 */
+  --background: #f4f4f5;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-alt: #fafafa;
+  --border: #e4e4e7;
+  --border-subtle: #f4f4f5;
+  --muted: #71717a;
+  --muted-fg: #a1a1aa;
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #f4f4f5;
+  --card: #18181b;
+  --card-alt: #1c1c1f;
+  --border: #27272a;
+  --border-subtle: #1f1f23;
+  --muted: #a1a1aa;
+  --muted-fg: #71717a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-alt: var(--card-alt);
+  --color-border-main: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-muted: var(--muted);
+  --color-muted-fg: var(--muted-fg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

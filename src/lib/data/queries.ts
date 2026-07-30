@@ -385,6 +385,8 @@ export interface TopConstituent {
   mansfield_rs: number | null;
   pos_52w_range: number | null;
   factors: Record<string, number | null> | null;
+  spark_prices: number[] | null;
+  prev_direction: string | null;
 }
 
 export async function getTopConstituents(limit = 20): Promise<Map<string, TopConstituent[]>> {
@@ -419,15 +421,39 @@ export async function getTopConstituents(limit = 20): Promise<Map<string, TopCon
               / nullif(lag(adj_close) over (partition by instrument_id order by trade_date), 0))::float8 as change_pct,
              row_number() over (partition by instrument_id order by trade_date desc) as rn
         from ohlcv_daily where adj_close is not null
+    ),
+    spark as (
+      select d.instrument_id,
+             array_agg(d.adj_close::float8 order by d.trade_date) as prices
+        from (
+          select instrument_id, trade_date, adj_close,
+                 row_number() over (partition by instrument_id order by trade_date desc) as rn
+            from ohlcv_daily
+           where adj_close is not null
+             and instrument_id in (select cid from ranked where rn <= $1)
+        ) d
+       where d.rn <= 5
+       group by d.instrument_id
+    ),
+    prev_signal as (
+      select distinct on (instrument_id)
+             instrument_id, direction as prev_direction
+        from signals
+       where as_of_date <= current_date - interval '7 days'
+         and instrument_id in (select cid from ranked where rn <= $1)
+       order by instrument_id, as_of_date desc
     )
     select r.index_symbol, r.symbol, r.name, r.sector, r.market_cap,
            d.close, d.change_pct,
            s.direction, s.conviction, s.factors,
-           t.rsi_14, t.mansfield_rs, t.pos_52w_range
+           t.rsi_14, t.mansfield_rs, t.pos_52w_range,
+           sp.prices as spark_prices, ps.prev_direction
       from ranked r
       left join latest_tech t on t.instrument_id = r.cid
       left join latest_signal s on s.instrument_id = r.cid
       left join daily_chg d on d.instrument_id = r.cid and d.rn = 1
+      left join spark sp on sp.instrument_id = r.cid
+      left join prev_signal ps on ps.instrument_id = r.cid
      where r.rn <= $1
      order by r.index_symbol, r.market_cap desc nulls last`, [limit]);
   const map = new Map<string, TopConstituent[]>();
