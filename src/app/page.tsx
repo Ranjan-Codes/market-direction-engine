@@ -163,9 +163,17 @@ export default async function TodayPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-3 mb-1">
                     <h2 className="text-lg font-bold tracking-tight">{r.name}</h2>
+                    {tech?.close != null && (
+                      <span className="text-base font-bold text-zinc-800 tabular-nums">
+                        {tech.close.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    )}
                     <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${style.chip}`}>
                       {r.regime === "risk_on" ? "supportive" : r.regime === "risk_off" ? "hostile" : "mixed"}
                     </span>
+                    {tech?.week_end && (
+                      <span className="text-[10px] text-zinc-400">as of {tech.week_end}</span>
+                    )}
                   </div>
                   <p className={`text-base font-semibold ${style.text}`}>{v.headline}</p>
                   <p className="text-sm text-zinc-500 mt-0.5">{v.sub}</p>
