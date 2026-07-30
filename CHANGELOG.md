@@ -4,6 +4,13 @@ All notable changes to the Market Direction Engine.
 
 ## 2026-07-30
 
+### Added — CSV portfolio import
+- **Import from broker** button on watchlist page — upload a CSV file exported from any broker (IG, Hargreaves Lansdown, Trading 212, Interactive Brokers, Fidelity, or any generic CSV)
+- Auto-detects the stock symbol column from common header names (symbol, ticker, epic, tidm, etc.) with fallback heuristic for unknown formats
+- Preview step shows detected symbols as toggleable chips — deselect any you don't want, then import
+- Progress bar with per-stock status while importing (each new stock gets full price history and signal computation)
+- Built-in broker help cards with step-by-step instructions for how to download a CSV from each supported broker
+
 ### Changed — Compact watchlist layout
 - **3-column grid** on wide screens (was 2-column), 2-column on medium, 1-column on mobile
 - **Cards ~50% shorter** — verdict condensed to single line (evidence bullets removed), factor bars replaced with compact color-coded chips (top 4), stat gauges replaced with inline text, fundamentals inlined to one row
