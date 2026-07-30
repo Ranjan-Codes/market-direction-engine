@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   getRegimes, getDataHealth, getIndexTechnicals, getConstituentBreadth,
-  getIndexDailyPrices, getTopConstituents, type TopConstituent,
+  getIndexDailyPrices, getTopConstituents,
 } from "../lib/data/queries";
 import { getWatchlist } from "../lib/data/watchlist";
 import { Sparkline } from "../components/ui";

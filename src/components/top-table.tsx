@@ -61,7 +61,7 @@ function getSortValue(s: TopConstituent, key: SortKey, idx: number): number | st
   }
 }
 
-export function TopTable({ stocks, indexSymbol }: { stocks: TopConstituent[]; indexSymbol: string }) {
+export function TopTable({ stocks, indexSymbol: _indexSymbol }: { stocks: TopConstituent[]; indexSymbol: string }) {
   const [sortKey, setSortKey] = useState<SortKey>("rank");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [filter, setFilter] = useState<string>("all");
@@ -76,7 +76,7 @@ export function TopTable({ stocks, indexSymbol }: { stocks: TopConstituent[]; in
   }
 
   const sorted = useMemo(() => {
-    let list = filter === "all" ? stocks : stocks.filter((s) => s.direction === filter);
+    const list = filter === "all" ? stocks : stocks.filter((s) => s.direction === filter);
     const indexed = list.map((s, i) => ({ s, origIdx: i }));
     indexed.sort((a, b) => {
       const av = getSortValue(a.s, sortKey, a.origIdx);

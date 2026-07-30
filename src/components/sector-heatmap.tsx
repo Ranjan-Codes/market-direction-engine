@@ -31,14 +31,7 @@ function sectorColor(b: SectorBlock): string {
   return "#a1a1aa";
 }
 
-function sectorColorDark(b: SectorBlock): string {
-  const ratio = b.total > 0 ? (b.bullish - b.bearish) / b.total : 0;
-  if (ratio > 0.3) return "#10b981";
-  if (ratio > 0) return "#065f46";
-  if (ratio < -0.3) return "#ef4444";
-  if (ratio < 0) return "#7f1d1d";
-  return "#52525b";
-}
+
 
 export function SectorHeatmap({ stocks }: { stocks: TopConstituent[] }) {
   const sectors = aggregateSectors(stocks);
