@@ -4,7 +4,16 @@ All notable changes to the Market Direction Engine.
 
 ## 2026-07-30
 
-### Added
+### Added — Dashboard visual overhaul
+- **Dark mode** — class-based toggle with localStorage persistence and flash-prevention; theme-aware CSS variables across all landing page components
+- **Mini sparklines** — 5-day price trend per stock in Top 20 table (new `spark` CTE in query)
+- **Visual gauges** — Market Pulse metrics now show colored progress bars instead of plain numbers (VIX, breadth, overbought/oversold)
+- **Signal change badges** — FLIP badge when a stock's signal changed in the last 7 days (new `prev_signal` CTE)
+- **Interactive Top 20 table** — client component with sortable columns (click headers), signal direction filter dropdown
+- **Collapsible sections** — Market Pulse, Technical Indicators, Sector Heatmap can be collapsed/expanded
+- **Sector heatmap** — SVG treemap sized by market cap, colored by bullish/bearish ratio per sector
+
+### Added — Earlier on 2026-07-30
 - **Side-by-side index layout** — S&P 500 and FTSE 100 displayed in a 2-column grid at desktop width, single column on mobile
 - **Signal driver column** — Top 20 table shows the strongest factor behind each stock's signal (Trend, Momentum, Rel Str, Divergence, Volume, Bollinger, Range), color-coded green/red
 - Fetch `sub_scores` factor breakdown from signals table in `getTopConstituents` query

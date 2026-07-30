@@ -13,12 +13,12 @@ Open items and future improvements for the Market Direction Engine.
 - [ ] **Intraday price refresh** — Currently showing previous day's close. Could add a lightweight intraday quote fetch (Yahoo delayed) for live-ish prices during market hours.
 - [ ] **Alert delivery** — Threshold alerts exist but delivery is GitHub Issues only. Consider email/Slack/push notification channels.
 - [ ] **Backtest chart visualizations** — Backtest page shows tables; adding equity curve charts and drawdown visualizations would improve interpretability.
-- [ ] **Dark mode** — Currently light theme only. Tailwind dark mode classes are straightforward to add.
+- [x] **Dark mode** — Implemented with class-based Tailwind v4 toggle, localStorage persistence, flash-prevention script.
 
 ## Low priority / nice-to-have
 
 - [ ] **Export to CSV/Excel** — Report page supports PDF via print. Add direct CSV/Excel export for the screener and Top 20 tables.
-- [ ] **Sector heatmap** — Visual heatmap of sector-level signal strength across the index.
+- [x] **Sector heatmap** — SVG treemap on landing page, sized by market cap, colored by signal direction.
 - [ ] **Correlation matrix** — Show cross-stock and cross-factor correlations for portfolio context.
 - [ ] **Multi-user support** — Currently single-user (watchlist stored in DB without user scoping). Add auth if needed for shared use.
 - [ ] **Historical signal accuracy tracking** — Track forward returns of signals over time to show live hit-rate dashboards.
