@@ -371,6 +371,72 @@ export async function getConstituentBreadth(): Promise<Map<string, ConstituentBr
   return map;
 }
 
+export interface TopConstituent {
+  index_symbol: string;
+  symbol: string;
+  name: string | null;
+  sector: string | null;
+  market_cap: number | null;
+  close: number | null;
+  change_pct: number | null;
+  direction: string | null;
+  conviction: number | null;
+  rsi_14: number | null;
+  mansfield_rs: number | null;
+  pos_52w_range: number | null;
+}
+
+export async function getTopConstituents(limit = 20): Promise<Map<string, TopConstituent[]>> {
+  const { rows } = await getPool().query(`
+    with ranked as (
+      select ix.symbol as index_symbol, c.id as cid, c.symbol, c.name,
+             c.metadata->>'sector' as sector,
+             (c.metadata->>'marketCap')::float8 as market_cap,
+             row_number() over (
+               partition by m.index_id
+               order by (c.metadata->>'marketCap')::float8 desc nulls last
+             ) as rn
+        from index_membership m
+        join instruments ix on ix.id = m.index_id
+        join instruments c  on c.id = m.constituent_id
+       where m.valid_to is null
+    ),
+    latest_tech as (
+      select distinct on (instrument_id)
+             instrument_id, rsi_14::float8, mansfield_rs::float8, pos_52w_range::float8
+        from technical_snapshots order by instrument_id, week_end desc
+    ),
+    latest_signal as (
+      select distinct on (instrument_id)
+             instrument_id, direction, conviction::float8
+        from signals order by instrument_id, as_of_date desc
+    ),
+    daily_chg as (
+      select instrument_id, adj_close::float8 as close,
+             ((adj_close - lag(adj_close) over (partition by instrument_id order by trade_date))
+              / nullif(lag(adj_close) over (partition by instrument_id order by trade_date), 0))::float8 as change_pct,
+             row_number() over (partition by instrument_id order by trade_date desc) as rn
+        from ohlcv_daily where adj_close is not null
+    )
+    select r.index_symbol, r.symbol, r.name, r.sector, r.market_cap,
+           d.close, d.change_pct,
+           s.direction, s.conviction,
+           t.rsi_14, t.mansfield_rs, t.pos_52w_range
+      from ranked r
+      left join latest_tech t on t.instrument_id = r.cid
+      left join latest_signal s on s.instrument_id = r.cid
+      left join daily_chg d on d.instrument_id = r.cid and d.rn = 1
+     where r.rn <= $1
+     order by r.index_symbol, r.market_cap desc nulls last`, [limit]);
+  const map = new Map<string, TopConstituent[]>();
+  for (const r of rows) {
+    const list = map.get(r.index_symbol) ?? [];
+    list.push(r);
+    map.set(r.index_symbol, list);
+  }
+  return map;
+}
+
 /** Freshness summary for the staleness banner. */
 export async function getDataHealth() {
   const { rows } = await getPool().query(`
