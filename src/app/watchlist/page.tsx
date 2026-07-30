@@ -225,7 +225,7 @@ function FundamentalsPanel({ f, price }: { f: Fundamentals; price: number | null
           <div>
             <span className="text-zinc-400 dark:text-zinc-500">Div yield</span>
             <span className="ml-1 font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">
-              {(f.dividendYield * 100).toFixed(2)}%
+              {f.dividendYield.toFixed(2)}%
             </span>
             {f.trailingAnnualDividendRate != null && (
               <span className="text-[9px] text-zinc-400 dark:text-zinc-500 ml-1">(${f.trailingAnnualDividendRate.toFixed(2)}/yr)</span>
