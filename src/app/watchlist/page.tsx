@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getWatchlist, type WatchlistEntry } from "../../lib/data/watchlist";
+import { getFundamentals, type Fundamentals } from "../../lib/providers/yahoo-quote";
 import { WatchStar } from "../../components/watch-star";
 import { AddStock } from "./add-stock";
 
@@ -161,7 +162,115 @@ function VerdictSummary({ entries }: { entries: WatchlistEntry[] }) {
   );
 }
 
-function StockCard({ e }: { e: WatchlistEntry }) {
+function RecBadge({ rec, mean }: { rec: string | null; mean: number | null }) {
+  if (!rec) return null;
+  const key = rec.toLowerCase();
+  const cls =
+    key === "buy" || key === "strong_buy"
+      ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700"
+      : key === "sell" || key === "strong_sell"
+        ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700"
+        : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700";
+  const label = rec.replace(/_/g, " ");
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase border rounded px-1.5 py-px ${cls}`}>
+      {label}
+      {mean != null && <span className="font-normal opacity-70">({mean.toFixed(1)})</span>}
+    </span>
+  );
+}
+
+function FundamentalsPanel({ f, price }: { f: Fundamentals; price: number | null }) {
+  const currentPrice = price ?? f.regularMarketPrice;
+  const upside = currentPrice && f.targetMeanPrice
+    ? ((f.targetMeanPrice - currentPrice) / currentPrice) * 100
+    : null;
+
+  return (
+    <div className="px-4 pb-3">
+      <div className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Fundamentals</div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-[11px]">
+        {/* Analyst Target */}
+        {f.targetMeanPrice != null && (
+          <div>
+            <span className="text-zinc-400 dark:text-zinc-500">Target</span>
+            <span className="ml-1 font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">
+              ${f.targetMeanPrice.toFixed(0)}
+            </span>
+            {upside != null && (
+              <span className={`ml-1 text-[10px] font-semibold tabular-nums ${upside >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                {upside >= 0 ? "+" : ""}{upside.toFixed(0)}%
+              </span>
+            )}
+            {f.targetLowPrice != null && f.targetHighPrice != null && (
+              <span className="text-[9px] text-zinc-400 dark:text-zinc-500 ml-1">
+                ({f.targetLowPrice.toFixed(0)}–{f.targetHighPrice.toFixed(0)})
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Recommendation */}
+        {f.recommendationKey && (
+          <div className="flex items-center gap-1.5">
+            <RecBadge rec={f.recommendationKey} mean={f.recommendationMean} />
+            {f.numberOfAnalystOpinions != null && (
+              <span className="text-[9px] text-zinc-400 dark:text-zinc-500">{f.numberOfAnalystOpinions} analysts</span>
+            )}
+          </div>
+        )}
+
+        {/* Dividend */}
+        {f.dividendYield != null && (
+          <div>
+            <span className="text-zinc-400 dark:text-zinc-500">Div yield</span>
+            <span className="ml-1 font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">
+              {(f.dividendYield * 100).toFixed(2)}%
+            </span>
+            {f.trailingAnnualDividendRate != null && (
+              <span className="text-[9px] text-zinc-400 dark:text-zinc-500 ml-1">(${f.trailingAnnualDividendRate.toFixed(2)}/yr)</span>
+            )}
+          </div>
+        )}
+
+        {/* P/E */}
+        {f.trailingPE != null && (
+          <div>
+            <span className="text-zinc-400 dark:text-zinc-500">P/E</span>
+            <span className="ml-1 font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">{f.trailingPE.toFixed(1)}</span>
+            {f.forwardPE != null && (
+              <span className="text-[9px] text-zinc-400 dark:text-zinc-500 ml-1">fwd {f.forwardPE.toFixed(1)}</span>
+            )}
+          </div>
+        )}
+
+        {/* EPS */}
+        {f.epsTrailingTwelveMonths != null && (
+          <div>
+            <span className="text-zinc-400 dark:text-zinc-500">EPS</span>
+            <span className="ml-1 font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">${f.epsTrailingTwelveMonths.toFixed(2)}</span>
+            {f.epsForward != null && (
+              <span className="text-[9px] text-zinc-400 dark:text-zinc-500 ml-1">fwd ${f.epsForward.toFixed(2)}</span>
+            )}
+          </div>
+        )}
+
+        {/* Price-to-Book */}
+        {f.priceToBook != null && (
+          <div>
+            <span className="text-zinc-400 dark:text-zinc-500">P/B</span>
+            <span className="ml-1 font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">{f.priceToBook.toFixed(1)}</span>
+            {f.bookValue != null && (
+              <span className="text-[9px] text-zinc-400 dark:text-zinc-500 ml-1">(BV ${f.bookValue.toFixed(1)})</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StockCard({ e, fund }: { e: WatchlistEntry; fund?: Fundamentals }) {
   const cfg = VERDICT_CFG[e.suggestion.verdict] ?? VERDICT_CFG.mixed;
   const changed = e.prev_direction && e.direction && e.prev_direction !== e.direction;
 
@@ -271,6 +380,9 @@ function StockCard({ e }: { e: WatchlistEntry }) {
         </div>
       </div>
 
+      {/* Fundamentals */}
+      {fund && <FundamentalsPanel f={fund} price={e.close} />}
+
       {/* Footer */}
       <div className="flex items-center justify-between px-4 py-2 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-800/20">
         <div className="text-[10px] text-zinc-400 dark:text-zinc-500">
@@ -289,6 +401,9 @@ function StockCard({ e }: { e: WatchlistEntry }) {
 
 export default async function WatchlistPage() {
   const entries = await getWatchlist();
+  const fundMap = entries.length > 0
+    ? await getFundamentals(entries.map((e) => e.symbol))
+    : new Map<string, Fundamentals>();
 
   return (
     <div className="space-y-4 max-w-[1200px] mx-auto">
@@ -323,7 +438,7 @@ export default async function WatchlistPage() {
           {/* Stock cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {entries.map((e) => (
-              <StockCard key={e.symbol} e={e} />
+              <StockCard key={e.symbol} e={e} fund={fundMap.get(e.symbol)} />
             ))}
           </div>
 

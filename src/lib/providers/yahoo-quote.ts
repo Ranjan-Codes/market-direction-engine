@@ -43,6 +43,75 @@ export async function searchSymbols(query: string): Promise<SymbolSearchHit[]> {
     });
 }
 
+export interface Fundamentals {
+  symbol: string;
+  targetMeanPrice: number | null;
+  targetHighPrice: number | null;
+  targetLowPrice: number | null;
+  recommendationKey: string | null;
+  recommendationMean: number | null;
+  numberOfAnalystOpinions: number | null;
+  dividendYield: number | null;
+  trailingAnnualDividendRate: number | null;
+  trailingPE: number | null;
+  forwardPE: number | null;
+  epsTrailingTwelveMonths: number | null;
+  epsForward: number | null;
+  priceToBook: number | null;
+  bookValue: number | null;
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
+  averageAnalystRating: string | null;
+  regularMarketPrice: number | null;
+}
+
+export async function getFundamentals(symbols: string[]): Promise<Map<string, Fundamentals>> {
+  const map = new Map<string, Fundamentals>();
+  if (symbols.length === 0) return map;
+  try {
+    for (let i = 0; i < symbols.length; i += CHUNK) {
+      const chunk = symbols.slice(i, i + CHUNK);
+      const quotes = await yf.quote(chunk);
+      for (const q of quotes) {
+        const r = q as unknown as Record<string, unknown>;
+        const num = (k: string): number | null => {
+          const v = r[k];
+          return typeof v === "number" && isFinite(v) ? v : null;
+        };
+        const str = (k: string): string | null => {
+          const v = r[k];
+          return typeof v === "string" ? v : null;
+        };
+        map.set(q.symbol, {
+          symbol: q.symbol,
+          targetMeanPrice: num("targetMeanPrice"),
+          targetHighPrice: num("targetHighPrice"),
+          targetLowPrice: num("targetLowPrice"),
+          recommendationKey: str("recommendationKey"),
+          recommendationMean: num("recommendationMean"),
+          numberOfAnalystOpinions: num("numberOfAnalystOpinions"),
+          dividendYield: num("dividendYield"),
+          trailingAnnualDividendRate: num("trailingAnnualDividendRate"),
+          trailingPE: num("trailingPE"),
+          forwardPE: num("forwardPE"),
+          epsTrailingTwelveMonths: num("epsTrailingTwelveMonths"),
+          epsForward: num("epsForward"),
+          priceToBook: num("priceToBook"),
+          bookValue: num("bookValue"),
+          fiftyTwoWeekHigh: num("fiftyTwoWeekHigh"),
+          fiftyTwoWeekLow: num("fiftyTwoWeekLow"),
+          averageAnalystRating: str("averageAnalystRating"),
+          regularMarketPrice: num("regularMarketPrice"),
+        });
+      }
+      if (i + CHUNK < symbols.length) await sleep(500);
+    }
+  } catch {
+    // Yahoo unreachable — return whatever we have so far
+  }
+  return map;
+}
+
 const CHUNK = 50;
 
 export async function getQuoteFacts(symbols: string[]): Promise<QuoteFacts[]> {
