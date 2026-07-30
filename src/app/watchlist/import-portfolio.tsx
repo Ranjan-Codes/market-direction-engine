@@ -1,8 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { addStock } from "./actions";
+import {
+  addStock,
+  fetchIGPositions,
+  fetchIGWatchlistList,
+  fetchIGWatchlistStocks,
+  type IGStockItem,
+} from "./actions";
 
 /* ── CSV parsing helpers ─────────────────────────────────────────────── */
 
@@ -97,11 +103,13 @@ const BROKER_HELP: { name: string; steps: string }[] = [
 /* ── Component ───────────────────────────────────────────────────────── */
 
 type Phase = "idle" | "preview" | "importing" | "done";
+type Tab = "csv" | "ig";
 
 interface ImportResult { symbol: string; ok: boolean; error?: string }
 
-export function ImportPortfolio({ inList }: { inList: string[] }) {
+export function ImportPortfolio({ inList, igAvailable }: { inList: string[]; igAvailable: boolean }) {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<Tab>(igAvailable ? "ig" : "csv");
   const [phase, setPhase] = useState<Phase>("idle");
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -110,6 +118,13 @@ export function ImportPortfolio({ inList }: { inList: string[] }) {
   const [results, setResults] = useState<ImportResult[]>([]);
   const [showBrokerHelp, setShowBrokerHelp] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+
+  const [igLoading, setIgLoading] = useState(false);
+  const [igError, setIgError] = useState<string | null>(null);
+  const [igStocks, setIgStocks] = useState<IGStockItem[]>([]);
+  const [igWatchlists, setIgWatchlists] = useState<{ id: string; name: string }[]>([]);
+  const [igSource, setIgSource] = useState<"positions" | "watchlist">("positions");
+
   const fileRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef(false);
   const router = useRouter();
@@ -122,9 +137,13 @@ export function ImportPortfolio({ inList }: { inList: string[] }) {
     setProgress(0);
     setCurrentSymbol("");
     setResults([]);
+    setIgStocks([]);
+    setIgError(null);
     abortRef.current = false;
     if (fileRef.current) fileRef.current.value = "";
   };
+
+  /* ── CSV handlers ──────────────────────────────────────────────────── */
 
   const handleFile = (file: File) => {
     if (!file.name.toLowerCase().endsWith(".csv")) {
@@ -154,6 +173,52 @@ export function ImportPortfolio({ inList }: { inList: string[] }) {
     if (f) handleFile(f);
   };
 
+  /* ── IG handlers ───────────────────────────────────────────────────── */
+
+  const loadIGPositions = async () => {
+    setIgLoading(true);
+    setIgError(null);
+    setIgSource("positions");
+    try {
+      const items = await fetchIGPositions();
+      const newOnly = items.filter((i) => !listed.has(i.symbol));
+      setIgStocks(newOnly);
+      setSelected(new Set(newOnly.map((i) => i.symbol)));
+      setPhase("preview");
+    } catch (err) {
+      setIgError(err instanceof Error ? err.message : "Could not connect to IG");
+    } finally {
+      setIgLoading(false);
+    }
+  };
+
+  const loadIGWatchlist = async (watchlistId: string) => {
+    setIgLoading(true);
+    setIgError(null);
+    setIgSource("watchlist");
+    try {
+      const items = await fetchIGWatchlistStocks(watchlistId);
+      const newOnly = items.filter((i) => !listed.has(i.symbol));
+      setIgStocks(newOnly);
+      setSelected(new Set(newOnly.map((i) => i.symbol)));
+      setPhase("preview");
+    } catch (err) {
+      setIgError(err instanceof Error ? err.message : "Could not fetch IG watchlist");
+    } finally {
+      setIgLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open && igAvailable && tab === "ig" && igWatchlists.length === 0) {
+      fetchIGWatchlistList()
+        .then(setIgWatchlists)
+        .catch(() => { /* watchlist list optional */ });
+    }
+  }, [open, igAvailable, tab, igWatchlists.length]);
+
+  /* ── Shared handlers ───────────────────────────────────────────────── */
+
   const toggleSymbol = (s: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -161,6 +226,10 @@ export function ImportPortfolio({ inList }: { inList: string[] }) {
       return next;
     });
   };
+
+  const allPreviewSymbols = tab === "ig"
+    ? igStocks.map((i) => i.symbol)
+    : (parsed?.symbols ?? []);
 
   const startImport = async () => {
     const symbols = [...selected];
@@ -199,7 +268,7 @@ export function ImportPortfolio({ inList }: { inList: string[] }) {
         onClick={() => setOpen(true)}
         className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors border border-zinc-200 dark:border-zinc-700 rounded-md px-2.5 py-1 hover:bg-zinc-50 dark:hover:bg-zinc-800"
       >
-        Import from broker (CSV)
+        Import from broker {igAvailable ? "(IG / CSV)" : "(CSV)"}
       </button>
     );
   }
@@ -208,18 +277,91 @@ export function ImportPortfolio({ inList }: { inList: string[] }) {
     <div className="border border-zinc-200 dark:border-zinc-700 rounded-lg bg-card shadow-sm overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800">
-        <div>
-          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Import portfolio from broker</span>
-          <span className="text-[11px] text-zinc-400 dark:text-zinc-500 ml-2">Upload a CSV exported from your broker</span>
-        </div>
+        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Import portfolio from broker</span>
         <button onClick={() => { reset(); setOpen(false); }} className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300">
           close
         </button>
       </div>
 
+      {/* Tab bar (only if IG is configured) */}
+      {igAvailable && phase === "idle" && (
+        <div className="flex border-b border-zinc-100 dark:border-zinc-800">
+          <button
+            onClick={() => { reset(); setTab("ig"); }}
+            className={`flex-1 text-xs font-medium py-2 transition-colors ${
+              tab === "ig"
+                ? "text-sky-700 dark:text-sky-400 border-b-2 border-sky-500"
+                : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+            }`}
+          >
+            Sync from IG
+          </button>
+          <button
+            onClick={() => { reset(); setTab("csv"); }}
+            className={`flex-1 text-xs font-medium py-2 transition-colors ${
+              tab === "csv"
+                ? "text-sky-700 dark:text-sky-400 border-b-2 border-sky-500"
+                : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+            }`}
+          >
+            Upload CSV
+          </button>
+        </div>
+      )}
+
       <div className="px-4 py-3 space-y-3">
-        {/* Idle: file upload */}
-        {phase === "idle" && (
+        {/* ── IG tab: idle ──────────────────────────────────────────── */}
+        {tab === "ig" && phase === "idle" && igAvailable && (
+          <>
+            <div className="space-y-2">
+              <button
+                onClick={loadIGPositions}
+                disabled={igLoading}
+                className="w-full text-left border border-zinc-200 dark:border-zinc-700 rounded-md px-3 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+              >
+                <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                  My IG positions
+                </div>
+                <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+                  Import all stocks you currently hold in your IG account
+                </div>
+              </button>
+
+              {igWatchlists.length > 0 && (
+                <>
+                  <div className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                    IG Watchlists
+                  </div>
+                  {igWatchlists.map((w) => (
+                    <button
+                      key={w.id}
+                      onClick={() => loadIGWatchlist(w.id)}
+                      disabled={igLoading}
+                      className="w-full text-left border border-zinc-200 dark:border-zinc-700 rounded-md px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                    >
+                      <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{w.name}</div>
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+
+            {igLoading && (
+              <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                Connecting to IG...
+              </div>
+            )}
+
+            {igError && (
+              <div className="text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-md px-3 py-2">
+                {igError}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── CSV tab: idle ─────────────────────────────────────────── */}
+        {tab === "csv" && phase === "idle" && (
           <>
             <div
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -232,7 +374,6 @@ export function ImportPortfolio({ inList }: { inList: string[] }) {
                   : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
               }`}
             >
-              <div className="text-2xl mb-1">📁</div>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
                 Drop your CSV file here, or <span className="font-medium text-sky-600 dark:text-sky-400">click to browse</span>
               </p>
@@ -261,39 +402,54 @@ export function ImportPortfolio({ inList }: { inList: string[] }) {
           </>
         )}
 
-        {/* Preview: show detected symbols */}
-        {phase === "preview" && parsed && (
+        {/* ── Shared: preview ───────────────────────────────────────── */}
+        {phase === "preview" && (
           <>
             <div className="text-xs text-zinc-600 dark:text-zinc-400">
-              Found <b>{parsed.symbols.length}</b> new stock{parsed.symbols.length !== 1 ? "s" : ""} in {parsed.totalRows} rows
-              {parsed.detectedColumn && <> (from the <b>{parsed.detectedColumn}</b> column)</>}.
-              {inList.length > 0 && <> Stocks already on your watchlist are skipped.</>}
+              {tab === "ig" ? (
+                <>
+                  Found <b>{igStocks.length}</b> stock{igStocks.length !== 1 ? "s" : ""} from your IG {igSource}.
+                  {inList.length > 0 && <> Already on your watchlist are skipped.</>}
+                </>
+              ) : parsed ? (
+                <>
+                  Found <b>{parsed.symbols.length}</b> new stock{parsed.symbols.length !== 1 ? "s" : ""} in {parsed.totalRows} rows
+                  {parsed.detectedColumn && <> (from the <b>{parsed.detectedColumn}</b> column)</>}.
+                  {inList.length > 0 && <> Stocks already on your watchlist are skipped.</>}
+                </>
+              ) : null}
             </div>
 
-            {parsed.symbols.length === 0 ? (
+            {allPreviewSymbols.length === 0 ? (
               <div className="text-sm text-zinc-500 dark:text-zinc-400 py-4 text-center">
-                No new symbols found. They may already be in your watchlist, or the file format was not recognised.
+                {tab === "ig"
+                  ? "No new stocks found — they may already be in your watchlist, or your IG positions only contain non-stock instruments (forex, indices, etc.)."
+                  : "No new symbols found. They may already be in your watchlist, or the file format was not recognised."}
               </div>
             ) : (
               <>
                 <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
-                  {parsed.symbols.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => toggleSymbol(s)}
-                      className={`text-[11px] font-medium px-2 py-0.5 rounded-md border transition-colors ${
-                        selected.has(s)
-                          ? "bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-400 border-sky-300 dark:border-sky-700"
-                          : "bg-zinc-50 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-700 line-through"
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
+                  {allPreviewSymbols.map((s) => {
+                    const igItem = tab === "ig" ? igStocks.find((i) => i.symbol === s) : null;
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => toggleSymbol(s)}
+                        title={igItem?.name}
+                        className={`text-[11px] font-medium px-2 py-0.5 rounded-md border transition-colors ${
+                          selected.has(s)
+                            ? "bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-400 border-sky-300 dark:border-sky-700"
+                            : "bg-zinc-50 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-700 line-through"
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <div className="flex items-center gap-2 text-[10px] text-zinc-400 dark:text-zinc-500">
-                  <button onClick={() => setSelected(new Set(parsed.symbols))} className="hover:text-zinc-700 dark:hover:text-zinc-300 underline">select all</button>
+                  <button onClick={() => setSelected(new Set(allPreviewSymbols))} className="hover:text-zinc-700 dark:hover:text-zinc-300 underline">select all</button>
                   <span>·</span>
                   <button onClick={() => setSelected(new Set())} className="hover:text-zinc-700 dark:hover:text-zinc-300 underline">deselect all</button>
                   <span>·</span>
@@ -321,7 +477,7 @@ export function ImportPortfolio({ inList }: { inList: string[] }) {
           </>
         )}
 
-        {/* Importing: progress */}
+        {/* ── Shared: importing ─────────────────────────────────────── */}
         {phase === "importing" && (
           <>
             <div className="space-y-2">
@@ -363,7 +519,7 @@ export function ImportPortfolio({ inList }: { inList: string[] }) {
           </>
         )}
 
-        {/* Done: summary */}
+        {/* ── Shared: done ──────────────────────────────────────────── */}
         {phase === "done" && (
           <>
             <div className="text-sm text-zinc-800 dark:text-zinc-200 font-medium">

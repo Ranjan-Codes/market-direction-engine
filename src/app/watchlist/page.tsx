@@ -4,6 +4,7 @@ import { getFundamentals, type Fundamentals } from "../../lib/providers/yahoo-qu
 import { WatchStar } from "../../components/watch-star";
 import { AddStock } from "./add-stock";
 import { ImportPortfolio } from "./import-portfolio";
+import { isIGConfigured } from "../../lib/providers/ig";
 
 export const dynamic = "force-dynamic";
 
@@ -345,6 +346,7 @@ export default async function WatchlistPage() {
   const fundMap = entries.length > 0
     ? await getFundamentals(entries.map((e) => e.symbol))
     : new Map<string, Fundamentals>();
+  const igAvail = isIGConfigured();
 
   return (
     <div className="space-y-3 max-w-[1600px] mx-auto">
@@ -362,7 +364,7 @@ export default async function WatchlistPage() {
 
       <div className="flex flex-wrap items-start gap-3">
         <AddStock inList={entries.map((e) => e.symbol)} />
-        <ImportPortfolio inList={entries.map((e) => e.symbol)} />
+        <ImportPortfolio inList={entries.map((e) => e.symbol)} igAvailable={igAvail} />
       </div>
 
       {entries.length === 0 ? (

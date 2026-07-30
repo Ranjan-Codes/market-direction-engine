@@ -4,6 +4,13 @@ All notable changes to the Market Direction Engine.
 
 ## 2026-07-30
 
+### Added — IG broker API integration
+- **Sync from IG** tab in the import panel — pulls positions and watchlists directly from your IG account via their REST API (no CSV download needed)
+- IG epic-to-Yahoo symbol mapping for UK (.L), US, and European stocks
+- IG watchlist picker — lists all your IG watchlists and lets you import any of them
+- Environment variables: `IG_API_KEY`, `IG_IDENTIFIER`, `IG_PASSWORD`, `IG_ACCOUNT_TYPE` (live/demo)
+- Tab UI: when IG is configured the import panel shows two tabs ("Sync from IG" / "Upload CSV"); falls back to CSV-only when IG credentials are absent
+
 ### Added — CSV portfolio import
 - **Import from broker** button on watchlist page — upload a CSV file exported from any broker (IG, Hargreaves Lansdown, Trading 212, Interactive Brokers, Fidelity, or any generic CSV)
 - Auto-detects the stock symbol column from common header names (symbol, ticker, epic, tidm, etc.) with fallback heuristic for unknown formats

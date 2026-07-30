@@ -23,6 +23,11 @@ const serverEnvSchema = z.object({
   REDDIT_CLIENT_ID: z.string().optional(),
   REDDIT_CLIENT_SECRET: z.string().optional(),
   REDDIT_USER_AGENT: z.string().optional(),
+
+  IG_API_KEY: z.string().optional(),
+  IG_IDENTIFIER: z.string().optional(),
+  IG_PASSWORD: z.string().optional(),
+  IG_ACCOUNT_TYPE: z.enum(["live", "demo"]).optional().default("live"),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

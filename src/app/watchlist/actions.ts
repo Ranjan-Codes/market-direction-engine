@@ -6,6 +6,12 @@ import { searchSymbols } from "../../lib/providers/yahoo-quote";
 import { ingestInstrumentOhlcv } from "../../lib/ingest/ohlcv";
 import { computeInstrumentTechnicals, loadIndexCloses } from "../../lib/compute/technicals";
 import { CONSTITUENT_DAILY_RETENTION_DAYS } from "../../config/markets";
+import {
+  getIGPositions,
+  getIGWatchlists,
+  getIGWatchlistItems,
+  type IGWatchlistSummary,
+} from "../../lib/providers/ig";
 
 export async function toggleWatchlist(symbol: string): Promise<{ inList: boolean }> {
   const pool = getPool();
@@ -151,4 +157,38 @@ export async function addStock(
   revalidatePath("/watchlist");
   if (!created) revalidatePath("/screener");
   return { ok: true };
+}
+
+/* ── IG broker integration ───────────────────────────────────────────── */
+
+export interface IGStockItem {
+  symbol: string;
+  name: string;
+  source: "positions" | "watchlist";
+}
+
+export async function fetchIGPositions(): Promise<IGStockItem[]> {
+  const positions = await getIGPositions();
+  return positions
+    .filter((p) => p.yahooSymbol != null)
+    .map((p) => ({
+      symbol: p.yahooSymbol!,
+      name: p.instrumentName,
+      source: "positions" as const,
+    }));
+}
+
+export async function fetchIGWatchlistList(): Promise<IGWatchlistSummary[]> {
+  return getIGWatchlists();
+}
+
+export async function fetchIGWatchlistStocks(watchlistId: string): Promise<IGStockItem[]> {
+  const items = await getIGWatchlistItems(watchlistId);
+  return items
+    .filter((i) => i.yahooSymbol != null)
+    .map((i) => ({
+      symbol: i.yahooSymbol!,
+      name: i.instrumentName,
+      source: "watchlist" as const,
+    }));
 }
