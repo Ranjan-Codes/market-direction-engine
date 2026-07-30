@@ -16,6 +16,11 @@ export interface WatchlistEntry {
   mansfield_rs: number | null;
   pos_52w_range: number | null;
   week_end: string | null;
+  close: number | null;
+  change_pct: number | null;
+  market_cap: number | null;
+  spark_prices: number[] | null;
+  prev_direction: string | null;
   suggestion: Suggestion;
 }
 
@@ -33,8 +38,38 @@ export async function getWatchlist(): Promise<WatchlistEntry[]> {
     latest_regime as (
       select distinct on (index_id) index_id, breakdown
         from regime_scores order by index_id, as_of_date desc
+    ),
+    daily_chg as (
+      select instrument_id, adj_close::float8 as close,
+             ((adj_close - lag(adj_close) over (partition by instrument_id order by trade_date))
+              / nullif(lag(adj_close) over (partition by instrument_id order by trade_date), 0))::float8 as change_pct,
+             row_number() over (partition by instrument_id order by trade_date desc) as rn
+        from ohlcv_daily
+       where adj_close is not null
+         and instrument_id in (select instrument_id from watchlist_items)
+    ),
+    spark as (
+      select d2.instrument_id,
+             array_agg(d2.adj_close::float8 order by d2.trade_date) as prices
+        from (
+          select instrument_id, trade_date, adj_close,
+                 row_number() over (partition by instrument_id order by trade_date desc) as rn
+            from ohlcv_daily
+           where adj_close is not null
+             and instrument_id in (select instrument_id from watchlist_items)
+        ) d2 where d2.rn <= 5
+        group by d2.instrument_id
+    ),
+    prev_sig as (
+      select distinct on (instrument_id)
+             instrument_id, direction as prev_direction
+        from signals
+       where as_of_date <= current_date - interval '7 days'
+         and instrument_id in (select instrument_id from watchlist_items)
+       order by instrument_id, as_of_date desc
     )
     select i.symbol, i.name, i.metadata->>'sector' as sector,
+           (i.metadata->>'marketCap')::float8 as market_cap,
            ix.symbol as index_symbol, w.added_at::text,
            s.direction, s.conviction::float8, coalesce(s.gated, false) as gated,
            coalesce(s.event_blackout, false) as event_blackout,
@@ -43,6 +78,9 @@ export async function getWatchlist(): Promise<WatchlistEntry[]> {
            t.bb_squeeze, t.rsi_divergence, t.rs_trend, t.mansfield_rs::float8,
            t.week_end::text,
            r.breakdown->'gauge' as index_gauge,
+           dc.close, dc.change_pct,
+           sp.prices as spark_prices,
+           ps.prev_direction,
            (select release_at::text from economic_events e
              where e.event_name = 'Earnings: ' || i.symbol
                and e.release_at between now() and now() + interval '30 days'
@@ -53,6 +91,9 @@ export async function getWatchlist(): Promise<WatchlistEntry[]> {
       left join latest_snap t on t.instrument_id = i.id
       left join instruments ix on ix.id = s.index_id
       left join latest_regime r on r.index_id = s.index_id
+      left join daily_chg dc on dc.instrument_id = i.id and dc.rn = 1
+      left join spark sp on sp.instrument_id = i.id
+      left join prev_sig ps on ps.instrument_id = i.id
      order by w.added_at desc`);
 
   return rows.map((r: Record<string, any>) => ({
@@ -70,6 +111,11 @@ export async function getWatchlist(): Promise<WatchlistEntry[]> {
     mansfield_rs: r.mansfield_rs,
     pos_52w_range: r.pos_52w_range,
     week_end: r.week_end,
+    close: r.close ?? null,
+    change_pct: r.change_pct ?? null,
+    market_cap: r.market_cap ?? null,
+    spark_prices: r.spark_prices ?? null,
+    prev_direction: r.prev_direction ?? null,
     suggestion: suggest({
       direction: r.direction,
       conviction: r.conviction,

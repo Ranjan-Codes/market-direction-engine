@@ -18,7 +18,7 @@ export function getPool(): pg.Pool {
   pool = new pg.Pool({
     connectionString,
     ssl: { rejectUnauthorized: false },
-    max: 4,
+    max: 2,
   });
   return pool;
 }
