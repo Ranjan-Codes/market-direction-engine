@@ -55,6 +55,16 @@ const FACTOR_LABELS: Record<string, string> = {
   relativeStrength: "RS", volume: "Vol", bollinger: "BB", range: "Range",
 };
 
+const FACTOR_TIPS: Record<string, string> = {
+  trendMa: "Trend — is the price moving up or down over recent weeks?",
+  momentum: "Momentum — how fast is the price changing?",
+  divergence: "Divergence — is momentum disagreeing with the price direction? (a warning sign)",
+  relativeStrength: "Relative Strength — is this stock doing better or worse than its index?",
+  volume: "Volume — is trading activity supporting the price move?",
+  bollinger: "Bollinger Bands — is the price stretched too far from its average?",
+  range: "Range — where does the price sit in its recent trading range?",
+};
+
 function fmtCap(v: number | null): string {
   if (v == null) return "";
   if (v >= 1e12) return `$${(v / 1e12).toFixed(1)}T`;
@@ -94,8 +104,8 @@ function FactorBars({ factors }: { factors: Record<string, number | null> | null
         const pct = Math.min(Math.abs(val) * 100, 100);
         const positive = val > 0;
         return (
-          <div key={key} className="flex items-center gap-1.5">
-            <span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400 w-10 text-right shrink-0">
+          <div key={key} className="flex items-center gap-1.5" title={FACTOR_TIPS[key] ?? ""}>
+            <span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400 w-10 text-right shrink-0 cursor-help">
               {FACTOR_LABELS[key] ?? key}
             </span>
             <div className="flex-1 h-1.5 bg-zinc-200/60 dark:bg-zinc-700/60 rounded-full overflow-hidden relative">
@@ -114,16 +124,16 @@ function FactorBars({ factors }: { factors: Record<string, number | null> | null
   );
 }
 
-function StatGauge({ label, value, max, unit, color }: {
-  label: string; value: number | null; max: number; unit?: string; color?: string;
+function StatGauge({ label, value, max, unit, color, tooltip }: {
+  label: string; value: number | null; max: number; unit?: string; color?: string; tooltip?: string;
 }) {
   if (value == null) return null;
   const pct = Math.min(Math.max((value / max) * 100, 0), 100);
   const c = color ?? (value / max > 0.7 ? "bg-red-500" : value / max < 0.3 ? "bg-emerald-500" : "bg-zinc-400 dark:bg-zinc-500");
   return (
-    <div className="flex-1 min-w-0">
+    <div className="flex-1 min-w-0" title={tooltip}>
       <div className="flex items-baseline justify-between gap-1 mb-0.5">
-        <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase">{label}</span>
+        <span className={`text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase ${tooltip ? "cursor-help" : ""}`}>{label}</span>
         <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 tabular-nums">{value.toFixed(0)}{unit ?? ""}</span>
       </div>
       <div className="h-1 bg-zinc-200/60 dark:bg-zinc-700/60 rounded-full overflow-hidden">
@@ -188,12 +198,12 @@ function FundamentalsPanel({ f, price }: { f: Fundamentals; price: number | null
 
   return (
     <div className="px-4 pb-3">
-      <div className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Fundamentals</div>
+      <div className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Fundamentals <span title="Financial health and analyst opinions — hover over each item for an explanation" className="cursor-help">(?)</span></div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-[11px]">
         {/* Analyst Target */}
         {f.targetMeanPrice != null && (
-          <div>
-            <span className="text-zinc-400 dark:text-zinc-500">Target</span>
+          <div title="The average price analysts expect this stock to reach — the % shows how much upside (or downside) from the current price">
+            <span className="text-zinc-400 dark:text-zinc-500 cursor-help">Target</span>
             <span className="ml-1 font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">
               ${f.targetMeanPrice.toFixed(0)}
             </span>
@@ -222,8 +232,8 @@ function FundamentalsPanel({ f, price }: { f: Fundamentals; price: number | null
 
         {/* Dividend */}
         {f.dividendYield != null && (
-          <div>
-            <span className="text-zinc-400 dark:text-zinc-500">Div yield</span>
+          <div title="Dividend Yield — how much the company pays you each year as a % of the share price. Higher = more income per share you own.">
+            <span className="text-zinc-400 dark:text-zinc-500 cursor-help">Div yield</span>
             <span className="ml-1 font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">
               {f.dividendYield.toFixed(2)}%
             </span>
@@ -235,8 +245,8 @@ function FundamentalsPanel({ f, price }: { f: Fundamentals; price: number | null
 
         {/* P/E */}
         {f.trailingPE != null && (
-          <div>
-            <span className="text-zinc-400 dark:text-zinc-500">P/E</span>
+          <div title="Price-to-Earnings ratio — how many years of current earnings it would take to equal the share price. Lower usually means cheaper. 'fwd' is based on expected future earnings.">
+            <span className="text-zinc-400 dark:text-zinc-500 cursor-help">P/E</span>
             <span className="ml-1 font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">{f.trailingPE.toFixed(1)}</span>
             {f.forwardPE != null && (
               <span className="text-[9px] text-zinc-400 dark:text-zinc-500 ml-1">fwd {f.forwardPE.toFixed(1)}</span>
@@ -246,8 +256,8 @@ function FundamentalsPanel({ f, price }: { f: Fundamentals; price: number | null
 
         {/* EPS */}
         {f.epsTrailingTwelveMonths != null && (
-          <div>
-            <span className="text-zinc-400 dark:text-zinc-500">EPS</span>
+          <div title="Earnings Per Share — how much profit the company makes for each share. Higher is better. 'fwd' is the expected future earnings.">
+            <span className="text-zinc-400 dark:text-zinc-500 cursor-help">EPS</span>
             <span className="ml-1 font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">${f.epsTrailingTwelveMonths.toFixed(2)}</span>
             {f.epsForward != null && (
               <span className="text-[9px] text-zinc-400 dark:text-zinc-500 ml-1">fwd ${f.epsForward.toFixed(2)}</span>
@@ -257,8 +267,8 @@ function FundamentalsPanel({ f, price }: { f: Fundamentals; price: number | null
 
         {/* Price-to-Book */}
         {f.priceToBook != null && (
-          <div>
-            <span className="text-zinc-400 dark:text-zinc-500">P/B</span>
+          <div title="Price-to-Book ratio — compares the share price to the company's net assets. Below 1.0 means the stock trades below its asset value. BV = Book Value per share.">
+            <span className="text-zinc-400 dark:text-zinc-500 cursor-help">P/B</span>
             <span className="ml-1 font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">{f.priceToBook.toFixed(1)}</span>
             {f.bookValue != null && (
               <span className="text-[9px] text-zinc-400 dark:text-zinc-500 ml-1">(BV ${f.bookValue.toFixed(1)})</span>
@@ -340,33 +350,39 @@ function StockCard({ e, fund }: { e: WatchlistEntry; fund?: Fundamentals }) {
       <div className="px-4 pb-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Factor breakdown */}
         <div>
-          <div className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Signal Factors</div>
+          <div title="The 7 ingredients that make up the overall signal — green bars push bullish, red bars push bearish" className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5 cursor-help">Signal Factors</div>
           <FactorBars factors={e.factors} />
-          <div className="flex items-center gap-2 mt-2">
-            <span className={`text-xs font-semibold ${
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <span title={e.direction === "bullish" ? "Indicators suggest the price is likely to rise" : e.direction === "bearish" ? "Indicators suggest the price is likely to fall" : "No clear direction — signals are mixed"}
+              className={`text-xs font-semibold cursor-help ${
               e.direction === "bullish" ? "text-emerald-700 dark:text-emerald-400" : e.direction === "bearish" ? "text-red-700 dark:text-red-400" : "text-zinc-600 dark:text-zinc-400"
             }`}>
               {e.direction ?? "–"}
             </span>
             {e.conviction != null && (
-              <span className="text-[10px] text-zinc-500 dark:text-zinc-400">conv {Math.round(e.conviction)}%</span>
+              <span title="How confident the system is in this signal — higher means stronger evidence" className="text-[10px] text-zinc-500 dark:text-zinc-400 cursor-help">
+                {Math.round(e.conviction)}% confidence
+              </span>
             )}
-            {e.gated && <span className="text-[9px] px-1 py-px rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400">gated</span>}
-            {e.event_blackout && <span className="text-[9px] px-1 py-px rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">blackout</span>}
+            {e.gated && <span title="The overall market mood is strong, so this bearish signal is held back — the market trend overrides individual stock weakness" className="text-[9px] px-1 py-px rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 cursor-help">gated</span>}
+            {e.event_blackout && <span title="Earnings report is coming soon — signals are less reliable around earnings, so new trades are paused" className="text-[9px] px-1 py-px rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 cursor-help">earnings soon</span>}
           </div>
         </div>
 
         {/* Key stats */}
         <div>
           <div className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Key Stats</div>
+
           <div className="space-y-2">
             <StatGauge label="RSI" value={e.rsi_14} max={100}
+              tooltip="Relative Strength Index — measures if the stock is overbought (above 70) or oversold (below 30). Think of it as a speedometer for price momentum."
               color={e.rsi_14 != null && e.rsi_14 > 70 ? "bg-red-500" : e.rsi_14 != null && e.rsi_14 < 30 ? "bg-emerald-500" : "bg-zinc-400 dark:bg-zinc-500"} />
             <StatGauge label="52w Range" value={e.pos_52w_range != null ? e.pos_52w_range * 100 : null} max={100} unit="%"
+              tooltip="Where the price sits in its 52-week range — 100% means near the yearly high, 0% means near the yearly low"
               color={e.pos_52w_range != null && e.pos_52w_range > 0.8 ? "bg-emerald-500" : e.pos_52w_range != null && e.pos_52w_range < 0.2 ? "bg-red-500" : "bg-zinc-400 dark:bg-zinc-500"} />
             {e.mansfield_rs != null && (
-              <div className="flex items-baseline justify-between">
-                <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase">Mansfield RS</span>
+              <div className="flex items-baseline justify-between" title="Relative Strength vs the index — positive means this stock is outperforming its index, negative means underperforming">
+                <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase cursor-help">Mansfield RS</span>
                 <span className={`text-xs font-bold tabular-nums ${e.mansfield_rs > 0 ? "text-emerald-600 dark:text-emerald-400" : e.mansfield_rs < 0 ? "text-red-600 dark:text-red-400" : "text-zinc-600 dark:text-zinc-400"}`}>
                   {e.mansfield_rs > 0 ? "+" : ""}{e.mansfield_rs.toFixed(2)}
                 </span>
@@ -374,6 +390,7 @@ function StockCard({ e, fund }: { e: WatchlistEntry; fund?: Fundamentals }) {
             )}
             {e.conviction != null && (
               <StatGauge label="Conviction" value={e.conviction} max={100} unit="%"
+                tooltip="How strongly all the indicators agree — high conviction means most signals point the same way"
                 color={e.conviction > 70 ? "bg-sky-500" : e.conviction > 40 ? "bg-zinc-400 dark:bg-zinc-500" : "bg-zinc-300 dark:bg-zinc-600"} />
             )}
           </div>
