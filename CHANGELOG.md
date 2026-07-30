@@ -4,6 +4,13 @@ All notable changes to the Market Direction Engine.
 
 ## 2026-07-30
 
+### Changed — Compact watchlist layout
+- **3-column grid** on wide screens (was 2-column), 2-column on medium, 1-column on mobile
+- **Cards ~50% shorter** — verdict condensed to single line (evidence bullets removed), factor bars replaced with compact color-coded chips (top 4), stat gauges replaced with inline text, fundamentals inlined to one row
+- **Summary bar** — verdict counts now display as inline badges instead of tall boxes
+- Container widened to 1600px to accommodate 3 columns
+- Tighter padding and smaller font sizes throughout
+
 ### Added — Watchlist fundamentals & tooltips
 - **Yahoo Finance fundamentals** on every watchlist card — dividend yield, P/E (trailing + forward), EPS (TTM + forward), price-to-book, analyst price target and recommendation badge
 - **Hover tooltips** on all technical jargon — every label (bullish, RSI, P/E, gated, etc.) now shows a plain-English explanation on hover
