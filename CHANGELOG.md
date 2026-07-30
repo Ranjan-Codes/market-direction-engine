@@ -4,6 +4,16 @@ All notable changes to the Market Direction Engine.
 
 ## 2026-07-30
 
+### Added — Watchlist fundamentals & tooltips
+- **Yahoo Finance fundamentals** on every watchlist card — dividend yield, P/E (trailing + forward), EPS (TTM + forward), price-to-book, analyst price target and recommendation badge
+- **Hover tooltips** on all technical jargon — every label (bullish, RSI, P/E, gated, etc.) now shows a plain-English explanation on hover
+- Renamed "conv" to "confidence" and "blackout" to "earnings soon" for clarity
+
+### Fixed — CI & database
+- **CI lint errors fixed** — theme toggle rewritten with `useSyncExternalStore` (was `useState` in `useEffect`), `let` → `const` in top-table, removed unused imports
+- **Pre-push hook** — `npm run verify` (lint + typecheck + tests) runs automatically before every push; broken code can no longer reach GitHub
+- **Database space reclaim** — reduced daily bar retention from 3 years to 400 days, snapshot retention from 3 years to 52 weeks, deleted ~489K old rows, VACUUM FULL reclaimed ~339 MB (525 → 186 MB)
+
 ### Added — Dashboard visual overhaul
 - **Dark mode** — class-based toggle with localStorage persistence and flash-prevention; theme-aware CSS variables across all landing page components
 - **Mini sparklines** — 5-day price trend per stock in Top 20 table (new `spark` CTE in query)

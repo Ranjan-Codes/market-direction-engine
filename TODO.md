@@ -4,7 +4,7 @@ Open items and future improvements for the Market Direction Engine.
 
 ## High priority
 
-- [ ] **Run DB space reclaim SQL** — Three SQL blocks pending execution in Supabase SQL Editor to physically reclaim ~160 MB (VACUUM FULL on ohlcv_daily, ohlcv_weekly, technical_snapshots). The logical trim is done; physical rewrite needs a maintenance window.
+- [x] **DB space reclaim** — Deleted 489K old rows + VACUUM FULL reclaimed 339 MB (525 → 186 MB). Retention tightened: daily bars 400 days, snapshots 52 weeks.
 - [ ] **Mobile responsive testing** — Side-by-side layout falls back to single column at <1280px but the compact table may still need horizontal scroll on small screens. Test and polish.
 
 ## Medium priority
