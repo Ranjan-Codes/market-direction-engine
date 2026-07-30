@@ -30,7 +30,24 @@ export interface IGWatchlistItem {
   yahooSymbol: string | null;
 }
 
+export interface IGSentiment {
+  longPositionPercentage: number;
+  shortPositionPercentage: number;
+}
+
 /* ── Auth ─────────────────────────────────────────────────────────────── */
+
+let cachedSession: { session: IGSession; expiresAt: number } | null = null;
+
+async function getSession(): Promise<IGSession> {
+  const now = Date.now();
+  if (cachedSession && now < cachedSession.expiresAt) {
+    return cachedSession.session;
+  }
+  const session = await authenticate();
+  cachedSession = { session, expiresAt: now + 5 * 60 * 1000 };
+  return session;
+}
 
 async function authenticate(): Promise<IGSession> {
   const env = getServerEnv();
@@ -115,7 +132,7 @@ export function isIGConfigured(): boolean {
 }
 
 export async function getIGPositions(): Promise<IGPosition[]> {
-  const session = await authenticate();
+  const session = await getSession();
   const res = await fetch(`${session.baseUrl}/positions`, {
     headers: { ...authHeaders(session), Version: "2" },
   });
@@ -144,7 +161,7 @@ export async function getIGPositions(): Promise<IGPosition[]> {
 }
 
 export async function getIGWatchlists(): Promise<IGWatchlistSummary[]> {
-  const session = await authenticate();
+  const session = await getSession();
   const res = await fetch(`${session.baseUrl}/watchlists`, {
     headers: authHeaders(session),
   });
@@ -161,7 +178,7 @@ export async function getIGWatchlists(): Promise<IGWatchlistSummary[]> {
 }
 
 export async function getIGWatchlistItems(watchlistId: string): Promise<IGWatchlistItem[]> {
-  const session = await authenticate();
+  const session = await getSession();
   const res = await fetch(`${session.baseUrl}/watchlists/${encodeURIComponent(watchlistId)}`, {
     headers: authHeaders(session),
   });
@@ -183,4 +200,88 @@ export async function getIGWatchlistItems(watchlistId: string): Promise<IGWatchl
   }
 
   return items;
+}
+
+/* ── Market search & client sentiment ────────────────────────────────── */
+
+async function findIGEpic(session: IGSession, ticker: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${session.baseUrl}/markets?searchTerm=${encodeURIComponent(ticker)}`,
+      { headers: authHeaders(session) },
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const match = (data.markets ?? []).find(
+      (m: Record<string, unknown>) => m.instrumentType === "SHARES",
+    );
+    return (match?.epic as string) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchSentimentBulk(
+  session: IGSession,
+  ids: string[],
+): Promise<Map<string, IGSentiment>> {
+  if (ids.length === 0) return new Map();
+  try {
+    const res = await fetch(
+      `${session.baseUrl}/clientsentiment?marketIds=${ids.join(",")}`,
+      { headers: authHeaders(session) },
+    );
+    if (!res.ok) return new Map();
+    const data = await res.json();
+    const map = new Map<string, IGSentiment>();
+    for (const s of data.clientSentiments ?? []) {
+      if (s.longPositionPercentage != null) {
+        map.set(s.marketId, {
+          longPositionPercentage: s.longPositionPercentage,
+          shortPositionPercentage: s.shortPositionPercentage,
+        });
+      }
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
+export async function getIGEnrichment(
+  symbols: string[],
+): Promise<Map<string, IGSentiment>> {
+  if (!isIGConfigured() || symbols.length === 0) return new Map();
+
+  try {
+    const session = await getSession();
+
+    const epicResults = await Promise.all(
+      symbols.map(async (sym) => {
+        const ticker = sym.replace(/\.(L|DE|PA|HK)$/, "");
+        const epic = await findIGEpic(session, ticker);
+        return epic ? { symbol: sym, epic } : null;
+      }),
+    );
+
+    const found = epicResults.filter(Boolean) as { symbol: string; epic: string }[];
+    if (found.length === 0) return new Map();
+
+    const sentimentMap = await fetchSentimentBulk(
+      session,
+      found.map((f) => f.epic),
+    );
+
+    const result = new Map<string, IGSentiment>();
+    for (const f of found) {
+      const sentiment = sentimentMap.get(f.epic);
+      if (sentiment) {
+        result.set(f.symbol, sentiment);
+      }
+    }
+
+    return result;
+  } catch {
+    return new Map();
+  }
 }

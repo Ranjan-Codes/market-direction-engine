@@ -10,6 +10,7 @@ Open items and future improvements for the Market Direction Engine.
 ## Medium priority
 
 - [ ] **Expand to more indices** — Architecture supports adding indices (e.g. DAX, Nikkei 225) by adding to `index_membership` + ingestion config. Evaluate data source coverage first.
+- [x] **IG client sentiment** — Watchlist cards show IG trader sentiment (% long vs short) as a contrarian indicator. Session-cached, parallel fetching, graceful fallback.
 - [ ] **Intraday price refresh** — Currently showing previous day's close. Could add a lightweight intraday quote fetch (Yahoo delayed) for live-ish prices during market hours.
 - [ ] **Alert delivery** — Threshold alerts exist but delivery is GitHub Issues only. Consider email/Slack/push notification channels.
 - [ ] **Backtest chart visualizations** — Backtest page shows tables; adding equity curve charts and drawdown visualizations would improve interpretability.

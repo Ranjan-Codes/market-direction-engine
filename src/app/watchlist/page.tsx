@@ -4,7 +4,7 @@ import { getFundamentals, type Fundamentals } from "../../lib/providers/yahoo-qu
 import { WatchStar } from "../../components/watch-star";
 import { AddStock } from "./add-stock";
 import { ImportPortfolio } from "./import-portfolio";
-import { isIGConfigured } from "../../lib/providers/ig";
+import { isIGConfigured, getIGEnrichment, type IGSentiment } from "../../lib/providers/ig";
 
 export const dynamic = "force-dynamic";
 
@@ -220,7 +220,30 @@ function CompactFundamentals({ f, price }: { f: Fundamentals; price: number | nu
   );
 }
 
-function StockCard({ e, fund }: { e: WatchlistEntry; fund?: Fundamentals }) {
+function SentimentBar({ sentiment }: { sentiment: IGSentiment }) {
+  const longPct = Math.round(sentiment.longPositionPercentage);
+  const majorityLong = longPct > 50;
+
+  return (
+    <div
+      className="flex items-center gap-1.5 text-[10px]"
+      title="How many IG traders are buying vs selling this stock. When 80%+ are on one side, the price often moves the other way (contrarian signal)."
+    >
+      <span className="text-zinc-400 dark:text-zinc-500 shrink-0 cursor-help">IG</span>
+      <div className="flex-1 h-1.5 bg-red-200 dark:bg-red-900/40 rounded-full overflow-hidden max-w-[60px]">
+        <div
+          className="h-full bg-emerald-500 dark:bg-emerald-400 rounded-full"
+          style={{ width: `${longPct}%` }}
+        />
+      </div>
+      <span className={`font-semibold tabular-nums cursor-help ${majorityLong ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+        {longPct}% long
+      </span>
+    </div>
+  );
+}
+
+function StockCard({ e, fund, sentiment }: { e: WatchlistEntry; fund?: Fundamentals; sentiment?: IGSentiment }) {
   const cfg = VERDICT_CFG[e.suggestion.verdict] ?? VERDICT_CFG.mixed;
   const changed = e.prev_direction && e.direction && e.prev_direction !== e.direction;
 
@@ -325,6 +348,13 @@ function StockCard({ e, fund }: { e: WatchlistEntry; fund?: Fundamentals }) {
         </div>
       )}
 
+      {/* IG trader sentiment */}
+      {sentiment && (
+        <div className="px-3 pb-1.5">
+          <SentimentBar sentiment={sentiment} />
+        </div>
+      )}
+
       {/* Footer */}
       <div className="flex items-center justify-between px-3 py-1 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-800/20">
         <span className="text-[9px] text-zinc-400 dark:text-zinc-500">
@@ -343,10 +373,16 @@ function StockCard({ e, fund }: { e: WatchlistEntry; fund?: Fundamentals }) {
 
 export default async function WatchlistPage() {
   const entries = await getWatchlist();
-  const fundMap = entries.length > 0
-    ? await getFundamentals(entries.map((e) => e.symbol))
-    : new Map<string, Fundamentals>();
   const igAvail = isIGConfigured();
+
+  const [fundMap, igSentiment] = await Promise.all([
+    entries.length > 0
+      ? getFundamentals(entries.map((e) => e.symbol))
+      : Promise.resolve(new Map<string, Fundamentals>()),
+    igAvail && entries.length > 0
+      ? getIGEnrichment(entries.map((e) => e.symbol))
+      : Promise.resolve(new Map<string, IGSentiment>()),
+  ]);
 
   return (
     <div className="space-y-3 max-w-[1600px] mx-auto">
@@ -381,7 +417,7 @@ export default async function WatchlistPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {entries.map((e) => (
-              <StockCard key={e.symbol} e={e} fund={fundMap.get(e.symbol)} />
+              <StockCard key={e.symbol} e={e} fund={fundMap.get(e.symbol)} sentiment={igSentiment.get(e.symbol)} />
             ))}
           </div>
 

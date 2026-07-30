@@ -4,6 +4,12 @@ All notable changes to the Market Direction Engine.
 
 ## 2026-07-30
 
+### Added — IG client sentiment on watchlist cards
+- **IG Trader Sentiment** bar on each watchlist card — shows what percentage of IG traders are buying vs selling that stock (a useful contrarian indicator: when 80%+ are on one side, the price often reverses)
+- Searches IG for each watchlist stock in parallel, fetches bulk sentiment, maps back to Yahoo symbols
+- Session caching for IG API — reuses the same login for 5 minutes instead of authenticating on every call
+- Graceful fallback: cards display normally when IG credentials are missing or IG has no data for a stock
+
 ### Added — IG broker API integration
 - **Sync from IG** tab in the import panel — pulls positions and watchlists directly from your IG account via their REST API (no CSV download needed)
 - IG epic-to-Yahoo symbol mapping for UK (.L), US, and European stocks
