@@ -384,6 +384,7 @@ export interface TopConstituent {
   rsi_14: number | null;
   mansfield_rs: number | null;
   pos_52w_range: number | null;
+  factors: Record<string, number | null> | null;
 }
 
 export async function getTopConstituents(limit = 20): Promise<Map<string, TopConstituent[]>> {
@@ -408,7 +409,8 @@ export async function getTopConstituents(limit = 20): Promise<Map<string, TopCon
     ),
     latest_signal as (
       select distinct on (instrument_id)
-             instrument_id, direction, conviction::float8
+             instrument_id, direction, conviction::float8,
+             sub_scores->'factors' as factors
         from signals order by instrument_id, as_of_date desc
     ),
     daily_chg as (
@@ -420,7 +422,7 @@ export async function getTopConstituents(limit = 20): Promise<Map<string, TopCon
     )
     select r.index_symbol, r.symbol, r.name, r.sector, r.market_cap,
            d.close, d.change_pct,
-           s.direction, s.conviction,
+           s.direction, s.conviction, s.factors,
            t.rsi_14, t.mansfield_rs, t.pos_52w_range
       from ranked r
       left join latest_tech t on t.instrument_id = r.cid
