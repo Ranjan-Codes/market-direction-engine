@@ -16,7 +16,7 @@ export default async function ScreenerPage() {
           <a href="/api/export/signals" className="underline">export CSV</a>
         </span>
       </h1>
-      <div className="border border-zinc-200 rounded-xl bg-white shadow-sm">
+      <div className="border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 shadow-sm">
         <HelpNote>
           Every index constituent gets a weekly signal from seven weighted factors, each scored in [-1, +1]:
           <b> trendMa</b> (price vs 30/40-week averages and fresh golden/death crosses), <b>momentum</b>

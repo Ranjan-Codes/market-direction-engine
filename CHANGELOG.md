@@ -4,6 +4,14 @@ All notable changes to the Market Direction Engine.
 
 ## 2026-07-30
 
+### Added — Screener page visual redesign
+- **Summary cards** — 5 color-coded stat cards at the top showing bullish/bearish/neutral counts, actionable count, and average conviction score with percentages
+- **Signal distribution bar** — horizontal bar chart showing the split of bullish (green), bearish (red), and neutral (gray) signals at a glance
+- **Sector signal map** — SVG treemap where each block is a sector, sized by how many stocks it has, colored green (mostly bullish) or red (mostly bearish). Click any sector to filter the table to just that sector
+- **Top picks** — two side-by-side panels showing the 6 strongest bullish and 6 strongest bearish stocks by conviction score
+- **Upgraded table styling** — direction shown as colored pill badges, conviction as number + colored progress bar, status as colored pill badges (BLACKOUT/GATED/CLEAR), alternating row colors, full dark mode support
+- Click "Clear: {sector}" button to remove sector filter
+
 ### Added — IG client sentiment on watchlist cards
 - **IG Trader Sentiment** bar on each watchlist card — shows what percentage of IG traders are buying vs selling that stock (a useful contrarian indicator: when 80%+ are on one side, the price often reverses)
 - Searches IG for each watchlist stock in parallel, fetches bulk sentiment, maps back to Yahoo symbols

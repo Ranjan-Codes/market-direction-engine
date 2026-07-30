@@ -20,6 +20,7 @@ Open items and future improvements for the Market Direction Engine.
 
 - [ ] **Export to CSV/Excel** — Report page supports PDF via print. Add direct CSV/Excel export for the screener and Top 20 tables.
 - [x] **Sector heatmap** — SVG treemap on landing page, sized by market cap, colored by signal direction.
+- [x] **Screener visual redesign** — Summary cards, distribution bar, sector signal map (clickable filter), top picks panels, colored table badges, full dark mode.
 - [ ] **Correlation matrix** — Show cross-stock and cross-factor correlations for portfolio context.
 - [ ] **Multi-user support** — Currently single-user (watchlist stored in DB without user scoping). Add auth if needed for shared use.
 - [ ] **Historical signal accuracy tracking** — Track forward returns of signals over time to show live hit-rate dashboards.
