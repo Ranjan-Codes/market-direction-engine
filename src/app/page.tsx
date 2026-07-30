@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getRegimes, getDataHealth, getIndexTechnicals, getConstituentBreadth } from "../lib/data/queries";
+import { getRegimes, getDataHealth, getIndexTechnicals, getConstituentBreadth, getIndexDailyPrices } from "../lib/data/queries";
 import { getWatchlist } from "../lib/data/watchlist";
 import { Sparkline } from "../components/ui";
 import {
@@ -99,9 +99,10 @@ function PulseMetric({
 /* ── Page ─────────────────────────────────────────────────────────────── */
 
 export default async function TodayPage() {
-  const [regimes, watchlist, health, techMap, breadthMap] = await Promise.all([
-    getRegimes(), getWatchlist(), getDataHealth(), getIndexTechnicals(), getConstituentBreadth(),
+  const [allRegimes, watchlist, health, techMap, breadthMap, dailyMap] = await Promise.all([
+    getRegimes(), getWatchlist(), getDataHealth(), getIndexTechnicals(), getConstituentBreadth(), getIndexDailyPrices(),
   ]);
+  const regimes = allRegimes.filter((r) => r.symbol !== "NDX");
   const stale = health.freshness.filter((f: { days_behind: number }) => f.days_behind > 4);
   const flagged = watchlist.filter(
     (e) => e.suggestion.verdict === "overbought-risk" || e.suggestion.verdict === "oversold-setup",
@@ -137,6 +138,7 @@ export default async function TodayPage() {
           const v = marketVerdict(r.regime, g.direction, g.intensity);
           const style = TONE_STYLE[v.tone];
           const tech = techMap.get(r.symbol);
+          const daily = dailyMap.get(r.symbol);
           const indicators = tech ? interpretIndicators(tech) : [];
           const catalysts = r.breakdown.catalysts.slice(0, 3);
           const cb = breadthMap.get(r.symbol);
@@ -161,19 +163,29 @@ export default async function TodayPage() {
               {/* Card header */}
               <div className="px-5 pt-5 pb-3 flex items-start justify-between gap-4 flex-wrap">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-3 mb-1">
+                  <div className="flex items-center gap-3 mb-1 flex-wrap">
                     <h2 className="text-lg font-bold tracking-tight">{r.name}</h2>
-                    {tech?.close != null && (
+                    {daily?.close != null ? (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-base font-bold text-zinc-800 tabular-nums">
+                          {daily.close.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                        {daily.change != null && daily.change_pct != null && (
+                          <span className={`text-sm font-semibold tabular-nums ${daily.change >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                            {daily.change >= 0 ? "+" : ""}{daily.change.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {" "}({daily.change_pct >= 0 ? "+" : ""}{(daily.change_pct * 100).toFixed(2)}%)
+                          </span>
+                        )}
+                        <span className="text-[10px] text-zinc-400">{daily.trade_date}</span>
+                      </div>
+                    ) : tech?.close != null ? (
                       <span className="text-base font-bold text-zinc-800 tabular-nums">
                         {tech.close.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
-                    )}
+                    ) : null}
                     <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${style.chip}`}>
                       {r.regime === "risk_on" ? "supportive" : r.regime === "risk_off" ? "hostile" : "mixed"}
                     </span>
-                    {tech?.week_end && (
-                      <span className="text-[10px] text-zinc-400">as of {tech.week_end}</span>
-                    )}
                   </div>
                   <p className={`text-base font-semibold ${style.text}`}>{v.headline}</p>
                   <p className="text-sm text-zinc-500 mt-0.5">{v.sub}</p>

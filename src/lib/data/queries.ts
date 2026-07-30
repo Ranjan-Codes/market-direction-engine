@@ -315,6 +315,34 @@ export async function getIndexTechnicals(): Promise<Map<string, IndexTechnicals>
   return map;
 }
 
+export interface IndexDailyPrice {
+  symbol: string;
+  trade_date: string;
+  close: number;
+  prev_close: number | null;
+  change: number | null;
+  change_pct: number | null;
+}
+
+export async function getIndexDailyPrices(): Promise<Map<string, IndexDailyPrice>> {
+  const { rows } = await getPool().query(`
+    with ranked as (
+      select i.symbol, d.trade_date::text, d.adj_close::float8 as close,
+             lag(d.adj_close::float8) over (partition by d.instrument_id order by d.trade_date) as prev_close,
+             row_number() over (partition by d.instrument_id order by d.trade_date desc) as rn
+        from ohlcv_daily d
+        join instruments i on i.id = d.instrument_id
+       where i.instrument_type = 'index' and d.adj_close is not null
+    )
+    select symbol, trade_date, close, prev_close,
+           (close - prev_close)::float8 as change,
+           ((close - prev_close) / nullif(prev_close, 0))::float8 as change_pct
+      from ranked where rn = 1 order by symbol`);
+  const map = new Map<string, IndexDailyPrice>();
+  for (const r of rows) map.set(r.symbol, r);
+  return map;
+}
+
 export interface ConstituentBreadth {
   index_symbol: string;
   total: number;
