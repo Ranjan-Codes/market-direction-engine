@@ -16,6 +16,7 @@ const NAV = [
   ["/", "Today"],
   ["/watchlist", "Watchlist"],
   ["/screener", "Stocks"],
+  ["/screen", "Screen"],
   ["/calendar", "Calendar"],
   ["/guide", "Guide"],
   ["/more", "More"],
