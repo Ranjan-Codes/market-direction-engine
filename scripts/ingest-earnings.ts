@@ -9,7 +9,7 @@ import { EARNINGS_CATALYSTS } from "../src/config/markets";
  * all constituents (index-weight proxy, stored in instruments.metadata),
  * then write upcoming earnings dates of each index's top-N names into
  * economic_events — the catalyst list every reversal-risk warning cites.
- * Importance: 'high' for the top \`highImportanceTop\` by cap, else 'medium'.
+ * Importance: 'high' for the top `highImportanceTop` by cap, else 'medium'.
  *
  * expected_bias (fundamental-support layer): a conservative guess at whether
  * consensus expects the print to be a positive or negative catalyst, from
@@ -28,14 +28,14 @@ interface MemberRow {
 async function main(): Promise<void> {
   await withIngestionRun("ingest-earnings", "yahoo", async () => {
     const pool = getPool();
-    const { rows: members }: { rows: MemberRow[] } = await pool.query(\`
+    const { rows: members }: { rows: MemberRow[] } = await pool.query(`
       select idx.symbol as index_key,
              coalesce(idx.metadata->>'country', 'US') as country,
              i.id as instrument_id, i.symbol
       from index_membership m
       join instruments idx on idx.id = m.index_id
       join instruments i on i.id = m.constituent_id
-      where m.valid_to is null\`);
+      where m.valid_to is null`);
 
     const uniqueSymbols = [...new Set(members.map((m) => m.symbol))];
     const facts = await getQuoteFacts(uniqueSymbols);
@@ -47,9 +47,9 @@ async function main(): Promise<void> {
     for (const f of facts) {
       if (f.marketCap == null) continue;
       await pool.query(
-        \`update instruments
+        `update instruments
          set metadata = metadata || jsonb_build_object('marketCap', $2::numeric)
-         where symbol = $1\`,
+         where symbol = $1`,
         [f.symbol, f.marketCap],
       );
       capsUpdated++;
@@ -84,7 +84,7 @@ async function main(): Promise<void> {
             : null;
         eventRows.push([
           m.country,
-          \`Earnings: ${m.symbol}\`,
+          `Earnings: ${m.symbol}`,
           date,
           rank < EARNINGS_CATALYSTS.highImportanceTop ? "high" : "medium",
           null, null, null,
@@ -99,7 +99,7 @@ async function main(): Promise<void> {
     // conflict key, keeping the higher importance.
     const deduped = new Map<string, unknown[]>();
     for (const row of eventRows) {
-      const key = \`${row[0]}|${row[1]}|${row[2]}\`;
+      const key = `${row[0]}|${row[1]}|${row[2]}`;
       const existing = deduped.get(key);
       if (!existing || (existing[3] !== "high" && row[3] === "high")) {
         deduped.set(key, row);
@@ -112,9 +112,9 @@ async function main(): Promise<void> {
       ["source", "country", "event_name", "release_at"],
       [...deduped.values()],
     );
-    console.log(\`  caps updated: ${capsUpdated}/${uniqueSymbols.length}\`);
+    console.log(`  caps updated: ${capsUpdated}/${uniqueSymbols.length}`);
     for (const [k, v] of Object.entries(summary)) {
-      console.log(\`  ${k}: top ${v.top} by cap, ${v.withDates} with upcoming earnings dates\`);
+      console.log(`  ${k}: top ${v.top} by cap, ${v.withDates} with upcoming earnings dates`);
     }
     return { rowsWritten: written, detail: { capsUpdated, summary } };
   });
