@@ -1,7 +1,7 @@
 import { loadEnvLocal } from "../src/lib/load-env";
 import { closePool, getPool, upsertRows } from "../src/lib/db";
 import { withIngestionRun } from "../src/lib/ingest/log";
-import { getQuoteFacts } from "../src/lib/providers/yahoo-quote";
+import { getFundamentals, getQuoteFacts } from "../src/lib/providers/yahoo-quote";
 import { EARNINGS_CATALYSTS } from "../src/config/markets";
 
 /**
@@ -9,7 +9,12 @@ import { EARNINGS_CATALYSTS } from "../src/config/markets";
  * all constituents (index-weight proxy, stored in instruments.metadata),
  * then write upcoming earnings dates of each index's top-N names into
  * economic_events — the catalyst list every reversal-risk warning cites.
- * Importance: 'high' for the top `highImportanceTop` by cap, else 'medium'.
+ * Importance: 'high' for the top \`highImportanceTop\` by cap, else 'medium'.
+ *
+ * expected_bias (fundamental-support layer): a conservative guess at whether
+ * consensus expects the print to be a positive or negative catalyst, from
+ * Yahoo's forward-vs-trailing EPS. Left null when guidance is unavailable
+ * rather than guessing; downstream code treats null as neutral/unknown.
  */
 loadEnvLocal();
 
@@ -23,27 +28,28 @@ interface MemberRow {
 async function main(): Promise<void> {
   await withIngestionRun("ingest-earnings", "yahoo", async () => {
     const pool = getPool();
-    const { rows: members }: { rows: MemberRow[] } = await pool.query(`
+    const { rows: members }: { rows: MemberRow[] } = await pool.query(\`
       select idx.symbol as index_key,
              coalesce(idx.metadata->>'country', 'US') as country,
              i.id as instrument_id, i.symbol
-        from index_membership m
-        join instruments idx on idx.id = m.index_id
-        join instruments i on i.id = m.constituent_id
-       where m.valid_to is null`);
+      from index_membership m
+      join instruments idx on idx.id = m.index_id
+      join instruments i on i.id = m.constituent_id
+      where m.valid_to is null\`);
 
     const uniqueSymbols = [...new Set(members.map((m) => m.symbol))];
     const facts = await getQuoteFacts(uniqueSymbols);
     const bySymbol = new Map(facts.map((f) => [f.symbol, f]));
+    const fundamentals = await getFundamentals(uniqueSymbols);
 
     // Persist market caps (weight proxy) on the instruments.
     let capsUpdated = 0;
     for (const f of facts) {
       if (f.marketCap == null) continue;
       await pool.query(
-        `update instruments
-            set metadata = metadata || jsonb_build_object('marketCap', $2::numeric)
-          where symbol = $1`,
+        \`update instruments
+         set metadata = metadata || jsonb_build_object('marketCap', $2::numeric)
+         where symbol = $1\`,
         [f.symbol, f.marketCap],
       );
       capsUpdated++;
@@ -67,13 +73,23 @@ async function main(): Promise<void> {
         const date = bySymbol.get(m.symbol)?.nextEarningsDate;
         if (!date || date < asOf) return; // future events only
         withDates++;
+        const fund = fundamentals.get(m.symbol);
+        const expectedBias =
+          fund && fund.epsForward != null && fund.epsTrailingTwelveMonths != null
+            ? fund.epsForward > fund.epsTrailingTwelveMonths
+              ? "bullish"
+              : fund.epsForward < fund.epsTrailingTwelveMonths
+                ? "bearish"
+                : null
+            : null;
         eventRows.push([
           m.country,
-          `Earnings: ${m.symbol}`,
+          \`Earnings: ${m.symbol}\`,
           date,
           rank < EARNINGS_CATALYSTS.highImportanceTop ? "high" : "medium",
           null, null, null,
           "yahoo", asOf,
+          expectedBias,
         ]);
       });
       summary[indexKey] = { top: ranked.length, withDates };
@@ -83,7 +99,7 @@ async function main(): Promise<void> {
     // conflict key, keeping the higher importance.
     const deduped = new Map<string, unknown[]>();
     for (const row of eventRows) {
-      const key = `${row[0]}|${row[1]}|${row[2]}`;
+      const key = \`${row[0]}|${row[1]}|${row[2]}\`;
       const existing = deduped.get(key);
       if (!existing || (existing[3] !== "high" && row[3] === "high")) {
         deduped.set(key, row);
@@ -92,13 +108,13 @@ async function main(): Promise<void> {
     const written = await upsertRows(
       "economic_events",
       ["country", "event_name", "release_at", "importance",
-       "consensus", "previous", "unit", "source", "as_of"],
+        "consensus", "previous", "unit", "source", "as_of", "expected_bias"],
       ["source", "country", "event_name", "release_at"],
       [...deduped.values()],
     );
-    console.log(`  caps updated: ${capsUpdated}/${uniqueSymbols.length}`);
+    console.log(\`  caps updated: ${capsUpdated}/${uniqueSymbols.length}\`);
     for (const [k, v] of Object.entries(summary)) {
-      console.log(`  ${k}: top ${v.top} by cap, ${v.withDates} with upcoming earnings dates`);
+      console.log(\`  ${k}: top ${v.top} by cap, ${v.withDates} with upcoming earnings dates\`);
     }
     return { rowsWritten: written, detail: { capsUpdated, summary } };
   });
