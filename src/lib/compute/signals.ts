@@ -16,6 +16,10 @@ import { SIGNAL_WEIGHTS, WEIGHTS_VERSION } from "../../config/weights";
  * Event overlay: fresh signals inside the blackout window before a
  * high-importance macro release (stock's country) or the stock's own
  * earnings are flagged event_blackout; upcoming events ride on the row.
+ * If an upcoming event carries an expected_bias (populated by a future
+ * fundamentals-ingestion job) that agrees with the signal direction, the
+ * blackout is skipped and the row is marked fundamental support instead;
+ * a disagreeing bias is marked fundamental conflict (informational only).
  */
 
 const clip = (v: number, lo = -1, hi = 1) => Math.min(hi, Math.max(lo, v));
@@ -238,7 +242,7 @@ export async function computeSignals(): Promise<{
 
   // Upcoming events for blackout: high-importance macro per country + earnings per symbol.
   const { rows: events } = await pool.query(`
-    select country, event_name, release_at::text, importance
+    select country, event_name, release_at::text, importance, expected_bias
       from economic_events
      where release_at between now() and now() + ($1 || ' days')::interval
        and (importance = 'high' or event_name like 'Earnings:%')`,
@@ -276,7 +280,14 @@ export async function computeSignals(): Promise<{
     const ownEarnings = earningsBySymbol.get(s.symbol);
     if (ownEarnings) upcoming.push(ownEarnings);
     upcoming.push(...(macroByCountry.get(s.country) ?? []));
-    const blackout = direction !== "neutral" && upcoming.length > 0;
+    const biasedEvents = upcoming.filter((e) => e.expected_bias != null);
+    const fundamentalSupport =
+        direction !== "neutral" && biasedEvents.some((e) => e.expected_bias === direction);
+    const fundamentalConflict =
+            direction !== "neutral" &&
+            biasedEvents.some((e) => e.expected_bias != null && e.expected_bias !== direction);
+    const blackout =
+            direction !== "neutral" && upcoming.length > 0 && !fundamentalSupport;
 
     if (direction !== "neutral") {
       if (gated) gatedCount++;
@@ -287,7 +298,7 @@ export async function computeSignals(): Promise<{
     rows.push([
       s.instrument_id, s.index_id, s.week_end, "2-6w", direction, conviction,
       Math.round(composite * 100) / 100,
-      JSON.stringify({ factors, coverage, regimeAtCompute: regime ?? null }),
+      JSON.stringify({ factors, coverage, regimeAtCompute: regime ?? null, fundamental: { support: fundamentalSupport, conflict: fundamentalConflict } }),
       gated, reason, blackout, JSON.stringify(upcoming), WEIGHTS_VERSION,
     ]);
     sample.push({
