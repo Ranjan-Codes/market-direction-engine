@@ -1,7 +1,7 @@
 import { loadEnvLocal } from "../src/lib/load-env";
 import { closePool, getPool, upsertRows } from "../src/lib/db";
 import { withIngestionRun } from "../src/lib/ingest/log";
-import { getFundamentals, getQuoteFacts } from "../src/lib/providers/yahoo-quote";
+import { getFundamentals, getQuoteFacts, type Fundamentals } from "../src/lib/providers/yahoo-quote";
 import { EARNINGS_CATALYSTS } from "../src/config/markets";
 
 /**
@@ -11,10 +11,13 @@ import { EARNINGS_CATALYSTS } from "../src/config/markets";
  * economic_events — the catalyst list every reversal-risk warning cites.
  * Importance: 'high' for the top `highImportanceTop` by cap, else 'medium'.
  *
- * expected_bias (fundamental-support layer): a conservative guess at whether
- * consensus expects the print to be a positive or negative catalyst, from
- * Yahoo's forward-vs-trailing EPS. Left null when guidance is unavailable
- * rather than guessing; downstream code treats null as neutral/unknown.
+ * Fundamental-expectation bias (north-star, 3rd layer): alongside each
+ * earnings date we attach a light-touch expected_bias read from the same
+ * consensus sell-side data shown on the watchlist cards (EPS-growth outlook,
+ * analyst rating, price-target upside). This is corroborating context for a
+ * technical signal, not a standalone trigger — see deriveExpectedBias below.
+ * Left null whenever the signals disagree or are missing, matching the
+ * "null = unknown" convention used elsewhere in economic_events.
  */
 loadEnvLocal();
 
@@ -23,6 +26,45 @@ interface MemberRow {
   country: string;
   instrument_id: number;
   symbol: string;
+}
+
+/**
+ * Combine three independent, already-public consensus reads into one
+ * directional bias. Requires at least two of the three to agree before
+ * committing to bullish/bearish; otherwise returns null rather than acting
+ * on a single noisy input.
+ */
+function deriveExpectedBias(f: Fundamentals | undefined): "bullish" | "bearish" | null {
+  if (!f) return null;
+  const votes: Array<"bullish" | "bearish" | null> = [];
+
+  if (f.epsForward != null && f.epsTrailingTwelveMonths != null) {
+    votes.push(
+      f.epsForward > f.epsTrailingTwelveMonths
+        ? "bullish"
+        : f.epsForward < f.epsTrailingTwelveMonths
+          ? "bearish"
+          : null,
+    );
+  }
+
+  if (f.recommendationKey) {
+    const key = f.recommendationKey.toLowerCase();
+    if (key.includes("buy")) votes.push("bullish");
+    else if (key.includes("sell") || key === "underperform") votes.push("bearish");
+  }
+
+  if (f.targetMeanPrice != null && f.regularMarketPrice != null && f.regularMarketPrice > 0) {
+    const upside = (f.targetMeanPrice - f.regularMarketPrice) / f.regularMarketPrice;
+    if (upside > 0.03) votes.push("bullish");
+    else if (upside < -0.03) votes.push("bearish");
+  }
+
+  const bullish = votes.filter((v) => v === "bullish").length;
+  const bearish = votes.filter((v) => v === "bearish").length;
+  if (bullish >= 2 && bullish > bearish) return "bullish";
+  if (bearish >= 2 && bearish > bullish) return "bearish";
+  return null;
 }
 
 async function main(): Promise<void> {
@@ -73,23 +115,14 @@ async function main(): Promise<void> {
         const date = bySymbol.get(m.symbol)?.nextEarningsDate;
         if (!date || date < asOf) return; // future events only
         withDates++;
-        const fund = fundamentals.get(m.symbol);
-        const expectedBias =
-          fund && fund.epsForward != null && fund.epsTrailingTwelveMonths != null
-            ? fund.epsForward > fund.epsTrailingTwelveMonths
-              ? "bullish"
-              : fund.epsForward < fund.epsTrailingTwelveMonths
-                ? "bearish"
-                : null
-            : null;
         eventRows.push([
           m.country,
           `Earnings: ${m.symbol}`,
           date,
           rank < EARNINGS_CATALYSTS.highImportanceTop ? "high" : "medium",
           null, null, null,
+          deriveExpectedBias(fundamentals.get(m.symbol)),
           "yahoo", asOf,
-          expectedBias,
         ]);
       });
       summary[indexKey] = { top: ranked.length, withDates };
@@ -108,11 +141,15 @@ async function main(): Promise<void> {
     const written = await upsertRows(
       "economic_events",
       ["country", "event_name", "release_at", "importance",
-        "consensus", "previous", "unit", "source", "as_of", "expected_bias"],
+        "consensus", "previous", "unit", "expected_bias", "source", "as_of"],
       ["source", "country", "event_name", "release_at"],
       [...deduped.values()],
     );
     console.log(`  caps updated: ${capsUpdated}/${uniqueSymbols.length}`);
+    console.log(
+      `  fundamentals: ${fundamentals.size}/${uniqueSymbols.length} symbols; ` +
+        `bias on ${eventRows.filter((r) => r[7] != null).length}/${eventRows.length} events`,
+    );
     for (const [k, v] of Object.entries(summary)) {
       console.log(`  ${k}: top ${v.top} by cap, ${v.withDates} with upcoming earnings dates`);
     }
