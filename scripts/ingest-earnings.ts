@@ -1,7 +1,7 @@
 import { loadEnvLocal } from "../src/lib/load-env";
 import { closePool, getPool, upsertRows } from "../src/lib/db";
 import { withIngestionRun } from "../src/lib/ingest/log";
-import { getQuoteFacts } from "../src/lib/providers/yahoo-quote";
+import { getFundamentals, getQuoteFacts, type Fundamentals } from "../src/lib/providers/yahoo-quote";
 import { EARNINGS_CATALYSTS } from "../src/config/markets";
 
 /**
@@ -10,6 +10,14 @@ import { EARNINGS_CATALYSTS } from "../src/config/markets";
  * then write upcoming earnings dates of each index's top-N names into
  * economic_events — the catalyst list every reversal-risk warning cites.
  * Importance: 'high' for the top `highImportanceTop` by cap, else 'medium'.
+ *
+ * Fundamental-expectation bias (north-star, 3rd layer): alongside each
+ * earnings date we attach a light-touch expected_bias read from the same
+ * consensus sell-side data shown on the watchlist cards (EPS-growth outlook,
+ * analyst rating, price-target upside). This is corroborating context for a
+ * technical signal, not a standalone trigger — see deriveExpectedBias below.
+ * Left null whenever the signals disagree or are missing, matching the
+ * "null = unknown" convention used elsewhere in economic_events.
  */
 loadEnvLocal();
 
@@ -20,6 +28,45 @@ interface MemberRow {
   symbol: string;
 }
 
+/**
+ * Combine three independent, already-public consensus reads into one
+ * directional bias. Requires at least two of the three to agree before
+ * committing to bullish/bearish; otherwise returns null rather than acting
+ * on a single noisy input.
+ */
+function deriveExpectedBias(f: Fundamentals | undefined): "bullish" | "bearish" | null {
+  if (!f) return null;
+  const votes: Array<"bullish" | "bearish" | null> = [];
+
+  if (f.epsForward != null && f.epsTrailingTwelveMonths != null) {
+    votes.push(
+      f.epsForward > f.epsTrailingTwelveMonths
+        ? "bullish"
+        : f.epsForward < f.epsTrailingTwelveMonths
+          ? "bearish"
+          : null,
+    );
+  }
+
+  if (f.recommendationKey) {
+    const key = f.recommendationKey.toLowerCase();
+    if (key.includes("buy")) votes.push("bullish");
+    else if (key.includes("sell") || key === "underperform") votes.push("bearish");
+  }
+
+  if (f.targetMeanPrice != null && f.regularMarketPrice != null && f.regularMarketPrice > 0) {
+    const upside = (f.targetMeanPrice - f.regularMarketPrice) / f.regularMarketPrice;
+    if (upside > 0.03) votes.push("bullish");
+    else if (upside < -0.03) votes.push("bearish");
+  }
+
+  const bullish = votes.filter((v) => v === "bullish").length;
+  const bearish = votes.filter((v) => v === "bearish").length;
+  if (bullish >= 2 && bullish > bearish) return "bullish";
+  if (bearish >= 2 && bearish > bullish) return "bearish";
+  return null;
+}
+
 async function main(): Promise<void> {
   await withIngestionRun("ingest-earnings", "yahoo", async () => {
     const pool = getPool();
@@ -27,14 +74,15 @@ async function main(): Promise<void> {
       select idx.symbol as index_key,
              coalesce(idx.metadata->>'country', 'US') as country,
              i.id as instrument_id, i.symbol
-        from index_membership m
-        join instruments idx on idx.id = m.index_id
-        join instruments i on i.id = m.constituent_id
-       where m.valid_to is null`);
+      from index_membership m
+      join instruments idx on idx.id = m.index_id
+      join instruments i on i.id = m.constituent_id
+      where m.valid_to is null`);
 
     const uniqueSymbols = [...new Set(members.map((m) => m.symbol))];
     const facts = await getQuoteFacts(uniqueSymbols);
     const bySymbol = new Map(facts.map((f) => [f.symbol, f]));
+    const fundamentals = await getFundamentals(uniqueSymbols);
 
     // Persist market caps (weight proxy) on the instruments.
     let capsUpdated = 0;
@@ -42,8 +90,8 @@ async function main(): Promise<void> {
       if (f.marketCap == null) continue;
       await pool.query(
         `update instruments
-            set metadata = metadata || jsonb_build_object('marketCap', $2::numeric)
-          where symbol = $1`,
+         set metadata = metadata || jsonb_build_object('marketCap', $2::numeric)
+         where symbol = $1`,
         [f.symbol, f.marketCap],
       );
       capsUpdated++;
@@ -73,6 +121,7 @@ async function main(): Promise<void> {
           date,
           rank < EARNINGS_CATALYSTS.highImportanceTop ? "high" : "medium",
           null, null, null,
+          deriveExpectedBias(fundamentals.get(m.symbol)),
           "yahoo", asOf,
         ]);
       });
@@ -92,11 +141,15 @@ async function main(): Promise<void> {
     const written = await upsertRows(
       "economic_events",
       ["country", "event_name", "release_at", "importance",
-       "consensus", "previous", "unit", "source", "as_of"],
+        "consensus", "previous", "unit", "expected_bias", "source", "as_of"],
       ["source", "country", "event_name", "release_at"],
       [...deduped.values()],
     );
     console.log(`  caps updated: ${capsUpdated}/${uniqueSymbols.length}`);
+    console.log(
+      `  fundamentals: ${fundamentals.size}/${uniqueSymbols.length} symbols; ` +
+        `bias on ${eventRows.filter((r) => r[7] != null).length}/${eventRows.length} events`,
+    );
     for (const [k, v] of Object.entries(summary)) {
       console.log(`  ${k}: top ${v.top} by cap, ${v.withDates} with upcoming earnings dates`);
     }
