@@ -130,7 +130,7 @@ export default async function StockPage({
                   <tr key={k} className="border-t border-zinc-200">
                     <td className="py-1 text-zinc-600">{k}</td>
                     <td className={v != null && v > 0.3 ? "text-green-700" : v != null && v < -0.3 ? "text-red-700" : ""}>
-                      {v == null ? "–" : v.toFixed(2)}
+                      {v == null ? "—" : Number(v).toFixed(2)}
                     </td>
                     <td className="w-40">
                       {v != null && (
@@ -216,7 +216,7 @@ export default async function StockPage({
                 </div>
               )}
               {context.analyst.dividendYield != null && (
-                <div>Dividend yield: {context.analyst.dividendYield.toFixed(2)}%</div>
+                <div>Dividend yield: {Number(context.analyst.dividendYield).toFixed(2)}%</div>
               )}
               <div className="text-zinc-500">
                 Fundamental bias: {corroborationLabel(context.analyst.corroboration)}
@@ -238,7 +238,7 @@ export default async function StockPage({
                   <tr key={s.source} className="border-t border-zinc-200">
                     <td className="py-1 capitalize">{s.source}</td>
                     <td className="py-1">
-                      {s.score == null ? "-" : s.score.toFixed(2)}
+                      {s.score == null ? "—" : Number(s.score).toFixed(2)}
                     </td>
                     <td className="py-1 text-zinc-500">
                       {s.volume == null ? "" : s.volume + " msgs"}
