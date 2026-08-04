@@ -77,8 +77,8 @@ export async function getReversalScreen(
       ranked_bar as (
         select
           o.instrument_id,
-          o.open as weekly_open,
-          o.close as weekly_close,
+          o.adj_open as weekly_open,
+          o.adj_close as weekly_close,
           row_number() over (
             partition by o.instrument_id order by o.week_end desc
           ) as rn
