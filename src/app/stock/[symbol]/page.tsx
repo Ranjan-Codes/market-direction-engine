@@ -6,6 +6,8 @@ import { getWatchlistSymbols } from "../../../lib/data/watchlist";
 import { Panel, fmtNum } from "../../../components/ui";
 import { WatchStar } from "../../../components/watch-star";
 import { StockChart } from "./chart";
+import { getStockContext } from "../../../lib/data/stock-context";
+import { corroborationLabel, type Direction } from "../../../lib/compute/corroboration";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,13 @@ export default async function StockPage({
   ]);
   if (!detail) notFound();
   const { instrument, bars, overlays, snapshots, signal, events } = detail;
+  const direction: Direction =
+    signal?.direction === "bullish"
+      ? "bullish"
+      : signal?.direction === "bearish"
+        ? "bearish"
+        : null;
+  const context = await getStockContext(instrument.symbol, direction);
   const tfParams = TIMEFRAME_PARAMS[timeframe];
   const latest = snapshots.at(-1);
   const factors = signal?.sub_scores?.factors as Record<string, number | null> | undefined;
@@ -121,7 +130,7 @@ export default async function StockPage({
                   <tr key={k} className="border-t border-zinc-200">
                     <td className="py-1 text-zinc-600">{k}</td>
                     <td className={v != null && v > 0.3 ? "text-green-700" : v != null && v < -0.3 ? "text-red-700" : ""}>
-                      {v == null ? "–" : v.toFixed(2)}
+                      {v == null ? "—" : Number(v).toFixed(2)}
                     </td>
                     <td className="w-40">
                       {v != null && (
@@ -174,6 +183,97 @@ export default async function StockPage({
           ) : (
             <p className="text-xs text-zinc-500">No snapshots.</p>
           )}
+        </Panel>
+
+        <Panel
+          title="Brokerage / analyst view"
+          help="Sell-side consensus from Yahoo Finance: rating, mean price target vs. price, forward vs. trailing EPS. A corroboration read, not a trigger."
+        >
+          {context.analyst ? (
+            <div className="text-xs space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">
+                  {context.analyst.recommendationKey ?? "no rating"}
+                </span>
+                {context.analyst.numberOfAnalystOpinions != null && (
+                  <span className="text-zinc-500">
+                    ({context.analyst.numberOfAnalystOpinions} analysts)
+                  </span>
+                )}
+              </div>
+              {context.analyst.upside != null && (
+                <div>
+                  Target upside:{" "}
+                  <span
+                    className={
+                      context.analyst.upside > 0
+                        ? "text-green-700"
+                        : "text-red-700"
+                    }
+                  >
+                    {(context.analyst.upside * 100).toFixed(1)}%
+                  </span>
+                </div>
+              )}
+              {context.analyst.dividendYield != null && (
+                <div>Dividend yield: {Number(context.analyst.dividendYield).toFixed(2)}%</div>
+              )}
+              <div className="text-zinc-500">
+                Fundamental bias: {corroborationLabel(context.analyst.corroboration)}
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-zinc-500">No analyst data yet.</p>
+          )}
+        </Panel>
+
+        <Panel
+          title="Social & rumour sentiment"
+          help="Per-stock retail chatter (StockTwits / Reddit). Volume is a contrarian froth hint, not a signal. Shown as confirms / contradicts / silent vs. the technical direction."
+        >
+          {context.social.length > 0 ? (
+            <table className="w-full text-xs">
+              <tbody>
+                {context.social.map((s) => (
+                  <tr key={s.source} className="border-t border-zinc-200">
+                    <td className="py-1 capitalize">{s.source}</td>
+                    <td className="py-1">
+                      {s.score == null ? "—" : Number(s.score).toFixed(2)}
+                    </td>
+                    <td className="py-1 text-zinc-500">
+                      {s.volume == null ? "" : s.volume + " msgs"}
+                    </td>
+                    <td className="py-1 text-right">{corroborationLabel(s.corroboration)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="text-xs text-zinc-500">
+              No social readings yet for this stock.
+            </p>
+          )}
+        </Panel>
+
+        <Panel
+          title="Fundamental catalysts"
+          help="Upcoming earnings and the light EPS-based expected bias. Corroborates a technical setup; null when signals disagree or data is missing."
+        >
+          <div className="text-xs space-y-1">
+            <div className="text-zinc-500">
+              Expected bias: {corroborationLabel(context.expectedBiasCorroboration)}
+              {context.expectedBias ? " (" + context.expectedBias + ")" : ""}
+            </div>
+            {events.length > 0 ? (
+              events.map((e: { event_name: string; release_at: string }, i: number) => (
+                <div key={i}>
+                  {e.event_name} · {e.release_at.slice(0, 10)}
+                </div>
+              ))
+            ) : (
+              <div className="text-zinc-500">No upcoming catalysts.</div>
+            )}
+          </div>
         </Panel>
       </div>
     </div>
