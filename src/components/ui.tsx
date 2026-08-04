@@ -7,7 +7,7 @@ export function Sparkline({
   baseline,
 }: {
   values: number[];
-  width?: number;
+    width?: number;
   height?: number;
   baseline?: number;
 }) {
@@ -120,7 +120,5 @@ export function HelpNote({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const fmtPct = (v: number | null | undefined, digits = 1) =>
-  v == null ? "–" : `${(v * 100).toFixed(digits)}%`;
-export const fmtNum = (v: number | null | undefined, digits = 1) =>
-  v == null ? "–" : v.toFixed(digits);
+export const fmtPct = (v: number | string | null | undefined, digits = 1) => { const n = v == null ? null : Number(v); return n == null || Number.isNaN(n) ? "—" : `${(n * 100).toFixed(digits)}%`; };
+export const fmtNum = (v: number | string | null | undefined, digits = 1) => { const n = v == null ? null : Number(v); return n == null || Number.isNaN(n) ? "—" : n.toFixed(digits); };
