@@ -140,9 +140,10 @@ async function checkRecentFailures(week: string): Promise<Finding[]> {
     `select job_name, count(*) as n, max(started_at)::date::text as last_failure
        from ingestion_runs
       where status = 'error' and job_name <> 'watchdog'
+        and not (job_name = any($2::text[]))
         and started_at >= now() - ($1 || ' days')::interval
       group by job_name order by job_name`,
-    [C.failureLookbackDays],
+    [C.failureLookbackDays, C.ignoreFailureJobs],
   );
   return rows.map((r: { job_name: string; n: string; last_failure: string }) => ({
     severity: "warning" as Severity,

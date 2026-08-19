@@ -38,6 +38,15 @@ export const WATCHDOG_CONFIG = {
   /** Recent-failure scan window. */
   failureLookbackDays: 3,
 
+  /**
+   * Best-effort enrichment jobs whose failures are expected and already
+   * tolerated (continue-on-error): StockTwits is Cloudflare-gated and GDELT
+   * rate-limits shared runner IPs. Warning on these would train the reader
+   * to ignore the watchdog, so they are excluded; if their absence ever
+   * matters, the staleness checks catch it.
+   */
+  ignoreFailureJobs: ["ingest-social", "ingest-gdelt"],
+
   /** Warn when the database passes this share of the Supabase free tier. */
   dbSizeWarnFraction: 0.85,
   dbSizeCapMb: 500,
