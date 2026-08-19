@@ -41,6 +41,11 @@ jobs:
           cache: npm
       - run: npm ci
 
+      # Apply any committed-but-unapplied migrations first: schema drift
+      # between repo and database silently broke this pipeline for 2 weeks.
+      - name: Apply database migrations
+        run: npm run migrate
+
       - name: Resolve job type
         id: job
         run: |
@@ -73,10 +78,16 @@ jobs:
         run: npx tsx scripts/ingest-calendar.ts
 
       - name: Earnings catalysts (top-25 per index)
+        # Enrichment, not core: a vendor hiccup here must never stop
+        # technicals/regime/signals from computing.
+        continue-on-error: true
         if: steps.job.outputs.type != 'universe'
         run: npx tsx scripts/ingest-earnings.ts
 
       - name: Positioning (CFTC COT)
+        # Enrichment, not core: a vendor hiccup here must never stop
+        # technicals/regime/signals from computing.
+        continue-on-error: true
         if: steps.job.outputs.type != 'universe'
         run: npx tsx scripts/ingest-positioning.ts
 
