@@ -1,0 +1,39 @@
+name: Watchdog
+
+# Independent health check. Deliberately a separate workflow from Ingestion:
+# an outage in that pipeline must not be able to silence its own alarm.
+on:
+  schedule:
+    # 07:15 UTC daily — after the 22:30 weekday ingestion and the weekend pass,
+    # so a failed overnight run is reported the next morning.
+    - cron: "15 7 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: watchdog
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      # Exits non-zero when it finds problems, so the red run notifies too.
+      - name: Pipeline health check
+        run: npx tsx scripts/watchdog.ts

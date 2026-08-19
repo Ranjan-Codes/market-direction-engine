@@ -3,6 +3,7 @@ import { closePool, getPool } from "../src/lib/db";
 import { withIngestionRun } from "../src/lib/ingest/log";
 import { getWatchlist } from "../src/lib/data/watchlist";
 import { ALERT_CONFIG } from "../src/config/alerts";
+import { createGithubIssue } from "../src/lib/ops/github-issue";
 
 /**
  * Threshold alerts, evaluated after the daily compute chain. Delivery =
@@ -93,27 +94,6 @@ async function evaluate(): Promise<Candidate[]> {
   return out;
 }
 
-async function deliverGithubIssue(c: Candidate): Promise<boolean> {
-  const token = process.env.GITHUB_TOKEN;
-  const repo = process.env.GITHUB_REPOSITORY; // owner/name, set by Actions
-  if (!token || !repo) return false;
-  const res = await fetch(`https://api.github.com/repos/${repo}/issues`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github+json",
-      "User-Agent": "market-direction-engine",
-    },
-    body: JSON.stringify({
-      title: `[${c.type}] ${c.subject}: ${c.message.split("\n")[0].slice(0, 80)}`,
-      body: `${c.message}\n\n_Analytical decision support only — not investment advice._`,
-      labels: ["alert", c.type],
-    }),
-    signal: AbortSignal.timeout(20_000),
-  });
-  return res.ok;
-}
-
 async function main(): Promise<void> {
   await withIngestionRun("check-alerts", null, async () => {
     const pool = getPool();
@@ -125,7 +105,11 @@ async function main(): Promise<void> {
         [c.type, c.subject, c.fingerprint],
       );
       if (existing.length > 0) continue; // already alerted with this content
-      const delivered = await deliverGithubIssue(c);
+      const delivered = await createGithubIssue({
+        title: `[${c.type}] ${c.subject}: ${c.message.split("\n")[0].slice(0, 80)}`,
+        body: `${c.message}\n\n_Analytical decision support only — not investment advice._`,
+        labels: ["alert", c.type],
+      });
       await pool.query(
         `insert into alerts (alert_type, subject, message, fingerprint, delivered)
          values ($1, $2, $3, $4, $5)`,

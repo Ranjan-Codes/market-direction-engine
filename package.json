@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "verify": "npm run lint && npm run typecheck && npm run test",
-    "migrate": "node scripts/migrate.mjs"
+    "migrate": "node scripts/migrate.mjs",
+    "watchdog": "tsx scripts/watchdog.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.7",
